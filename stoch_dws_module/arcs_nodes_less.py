@@ -229,8 +229,8 @@ def get_arcs_less_nodes(nodes, edges, build_shp, dem_name, ngroup, city):
     edges_out['vN'] = edges_out['vN'].values.astype(str)
     edges_out['length']=edges_out.geometry.length
     ## for testing
-    edges_out[['length','uN','vN','geometry']].to_file('./edges_out.shp')
-    nodes_out[['n_id','geometry']].to_file('./nodes_out.shp')
+    edges_out[['length','uN','vN','geometry']].to_file('./output/edges_out/edges_out.shp')
+    nodes_out[['n_id','geometry']].to_file('./output/nodes_out/nodes_out.shp')
     
     #########################
     #can use a raster to add elevations to the nodes:

@@ -23,6 +23,7 @@ def get_buildings(name, in_file, xmini, xmaxi, ymini, ymaxi):
     city_limits = Polygon([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)])
 
     filename = f"C:\\Users\mbans\Desktop\CMOR492-DWS\DWS\\{in_file}"
+    filename = "./Alabama.geojson"
     file = gpd.read_file(filename)
     clip_gdf = gpd.clip(file, city_limits)
 
@@ -39,7 +40,6 @@ def get_buildings(name, in_file, xmini, xmaxi, ymini, ymaxi):
     f = open(export_file_name, "w")
     f.write("buildings,V1,V2,V3\n")
     for i in clip_gdf.geometry:
-        print("i = ", i)
         counter += 1
         b_name = "B" + str(counter)
         poly_list = []
