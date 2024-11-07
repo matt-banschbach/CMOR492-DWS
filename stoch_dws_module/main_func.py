@@ -1,5 +1,5 @@
-from utils import get_buildings, get_arcs_2
-from optimization import get_Results
+from stoch_dws_module.utils import get_buildings, get_arcs_2
+from stoch_dws_module.optimization import get_Results
 
 
 
@@ -14,11 +14,15 @@ def main():
     ymin = 32.4210
     ymax = 32.45930
 
+    print("Getitng buildings")
     building_coords_txt = get_buildings(city, state, xmin, xmax, ymin, ymax)
-
+    print("Getting buildings done")
     city_bounds = [ymax, ymin, xmax, xmin]
 
+    print("Getting arcs")
     arc_file_names, all_nodes_df = get_arcs_2(building_coords_txt, city_bounds, cluster_number, city)
+
+    print("Getting arcs done")
 
     for i in arc_file_names:
         print(i)
@@ -48,6 +52,7 @@ def main():
     added_post_proc = 8.52  # for gallons per day so use arcFlow values
     collection_om = 209
     hometreatment = 0
+    print("Running get results")
     get_Results(1, pipe_dictionary, arb_min_slope, arb_max_slope, node_flow,
                 pipesize, excavation, bedding_cost_sq_ft, capital_cost_pump_station, ps_flow_cost, ps_OM_cost,
                 treat_om, hometreatment, fixed_treatment_cost, added_post_proc, collection_om, xmin, xmax, ymin, ymax,
