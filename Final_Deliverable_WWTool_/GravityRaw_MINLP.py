@@ -217,7 +217,7 @@ gravityDrainageSheet.write(0, 6, 'Objective + Additional Costs')
 # define aquifer boundaries:
 # we need to know aquifer boundaries to identify these potential treatment nodes
 aquifers = gpd.read_file(
-    "C:\\Users\\yunus\\OneDrive\\Desktop\\Columbia_School_Work\\Alabama_Water_Project\\WW_FINAL\\us_aquifers.shx")
+    ".\\us_aquifers.shx")
 utown_poly = Polygon([[xmin, ymin], [xmin, ymax], [xmax, ymax], [xmax, ymin]])
 aquifers_utown = gpd.clip(aquifers, utown_poly)
 # in this instance we have 21 clusters so we need to iterate through this code 14 times
