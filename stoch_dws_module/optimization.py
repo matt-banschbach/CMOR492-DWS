@@ -43,10 +43,10 @@ def correctFlow2(arcsR, outletR):
     return returnArcs[1:,:]
 
 
-
 def readArcs(fileID):
     file = np.genfromtxt(fileID, delimiter=" ", dtype = str)
     return file
+
 
 def gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, inflow, bedding_cost_sq_ft, excavation,
                 capital_cost_pump_station, pipecost, collection_om, ps_OM_cost, treat_om, fixed_treatment_cost,
