@@ -252,7 +252,7 @@ def gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, 
     #     m.optimize()
 
     # saves all the model's variable names and their corresponding values as a txt file
-    modelname = 'Decentralized_Uniontown_' + str(cluster) + "raw_grav" + ".csv"
+    modelname = './cluster_solutions/Decentralized_Uniontown_' + str(cluster) + "raw_grav" + ".csv"
     modelfile = open(modelname, "w")
     modelfile.write('Solution Value: %g \n' % m.objVal)
     for v in m.getVars():
@@ -549,7 +549,7 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         #     if inflow[str(i)] == 0:
         #         nodes2.remove(i)
         # creating of a txt file with all the edges and flows for each cluster
-        f = open(str(ngroups) + '_clust_' + str(cluster) + '_flow_for_arcs.txt', 'w')
+        f = open('./cluster_arc_flows/' + str(ngroups) + '_clust_' + str(cluster) + '_flow_for_arcs.txt', 'w')
         for k, l in arcFlow:
             flow = arcFlow[k, l]
             f.write(str(k) + " " + str(l) + " " + str(flow) + '\n')
