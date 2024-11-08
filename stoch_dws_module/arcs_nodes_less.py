@@ -447,7 +447,7 @@ def get_arcs_less_nodes(nodes, edges, build_shp, dem_name, ngroup, city):
     #save all the edges in each steiner tree for each clsuter
     for i in mst_list:
         mst_names_list.append('clust_' + str(mst_count) + '_road_arcs_utown.txt')
-        f = open('clust_' + str(mst_count) + '_road_arcs_utown.txt','w')
+        f = open('./cluster_road_arcs/clust_' + str(mst_count) + '_road_arcs_utown.txt','w')
         for j, k, l in i.edges:
             distance = i.edges[j, k, l]['weight']
             f.write(str(j) + " " + str(k) + " " + str(distance) +'\n')
