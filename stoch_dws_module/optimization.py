@@ -13,6 +13,7 @@ from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
 from scipy.spatial import distance_matrix
+from stoch_dws_module.utils_2 import make_workbook
 
 
 def correctFlow2(arcsR, outletR):
@@ -352,11 +353,6 @@ def gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, 
 def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_flow, pipesize, exc, bed, capex_PS,
                 ps_flow, ps_OM, treat_o, h_treat, fixed_treat, added_post, collect_o, xmini, xmaxi, ymini, ymaxi,
                 aquifer_file, ngroups, node_df, name, arc_files):
-    ################################## initialize parameters
-    # pipesize = [0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35,0.4,0.45]
-    # #elevation constraints
-    # pipesize_str, pipecost = gp.multidict({'0.05': 8.7, '0.06': 9.5, '0.08': 11, \
-    #                                       '0.1': 12.6, '0.15': 43.5,'0.2': 141, '0.25': 151, '0.3': 161})
 
     # fully installed costs
     pipesize_str, pipecost = gp.multidict(pipe_dictionary)
@@ -377,34 +373,19 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
     utown_poly = Polygon([[xmini, ymini], [xmini, ymaxi], [xmaxi, ymaxi], [xmaxi, ymini]])
     aquifers_utown = gpd.clip(aquifers, utown_poly)
 
+
     # note: if you did this for the other models you don't need to do it for this one
     # after you run this in the kernel then you start adding your sheets
-    wb = Workbook()
-    Sheet = wb.add_sheet("STEP_Pressurized_System")
-    Sheet.write(0, 0, 'Cluster_Name')
-    Sheet.write(0, 1, 'Obj1')
-    Sheet.write(0, 2, 'Obj2')
-    Sheet.write(0, 3, 'Obj3')
-    Sheet.write(0, 4, 'Obj4')
-    Sheet.write(0, 5, 'Obj')
-    Sheet.write(0, 6, 'Objective + Additional Costs')
 
-    Pumps = wb.add_sheet("pumps_loc_cluster")
-    Pumps.write(0, 0, 'cluster')
-    Pumps.write(0, 1, 'Pump_Arc_Locations')
-    Pumps.write(0, 2, 'Pump_Arc_Mid_Lon')
-    Pumps.write(0, 3, 'Pump_Arc_Mid_Lat')
+    wb, Sheet, Pumps = make_workbook()
     pumpcounter = 1
 
     cluster_count = 1
     for cluster in arc_files:
-        # arcsfile = os.path.realpath(os.path.join(os.path.dirname('MST_Decentralized'))) + '\\' + arcsfilename
         arcsDist = readArcs(cluster)  # reads all the arcs from the txt file
-        arcs = arcsDist[:,
-               :-1]  # records all the arcs except the last one (which is just the treatment plant and a dummy node)
+        arcs = arcsDist[:, :-1]  # records all the arcs except the last one (which is just the treatment plant and a dummy node)
 
         road_nodes = set()
-        demand_nodes = []
         # creates the dictionary of all the distances between each node connected by an edge
         arcDistances = dict()
         for a, b, c in arcsDist:
@@ -431,15 +412,16 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
                 treatment.append(0.1)
             else:
                 treatment.append(0)
-        df['treatment'] = treatment
+        df['treatment'] = treatment  # Adding a new column
         df1 = df.loc[df['cluster'] == cluster_count - 1]  # we assume the treatment node to a cluster
+
         #############################################################
         # find the outlet node elevation using the dataframe
-        # specify it can only come from a node with non zero demand
+        # specify it can only come from a node with non-zero demand
         # also within the aquifer
         # also have a case for when there the site is not above an aquifer
-
         # finds the road node with the least elevation to be the treatment plant from among all suitable candidates
+
         if all(df1['treatment'] == 0):
             raise Exception("This is not correct there are no nodes producing wastewater")
         if len(df1[df1['treatment'] == 1]) == 0:
@@ -470,14 +452,6 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         nodes = list()
         nodes_notup = list()
         arcFlow = dict()
-
-        # for i in range(len(arcs)+1):
-        #     tup = (i,)
-        #     nodes.append(tup)
-        #     nodes_notup.append(i)
-
-        # pumpcap = dict()
-        # arcs, arcSlopes = gp.multidict(arcSlopes)
 
         # assigns flow to each edge
         # this process begins by finding all the nodes that are only connected to one
@@ -529,15 +503,19 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         # creating of a dummy node for treatment
         # Break up treatment plant node into a dummy node and a treatment plant node only a meter or two away.
         # sets it up as 100 meters away cause the elevation change might be a lot so this accomodates for that
+
         road_nodes.add(outlet_node + 'f')
         arcs.append(np.array([outlet_node, outlet_node + 'f'], dtype='<U11'))
         # nodes_notup.append((len(nodes)-1),)
         endnodelon = float(df.loc[df['n_id'] == outlet_node]['lon']) + 0.0001
         endnodelat = float(df.loc[df['n_id'] == outlet_node]['lat']) + 0.0001
         endnodeelev = float(df.loc[df['n_id'] == outlet_node]['elevation'])
+
+        index = [1]
         df2 = {'n_id': str(outlet_node) + 'f', 'x': 0, 'y': 0, 'geometry': Point(0, 0), 'elevation': endnodeelev,
                'n_demand': 0, 'lat': endnodelat, 'lon': endnodelon, 'cluster': -1, 'treatment': 1}
-        df = df.append(df2, ignore_index=True)
+        df2 = pd.DataFrame(df2, index=index)
+        df = pd.concat([df, df2])
         arcDistances[(outlet_node, outlet_node + 'f')] = 35
         # creating of an edge leading into the dummy node
         endlinks = [(i, j) for i, j in arcFlow if j == outlet_node]
@@ -577,6 +555,8 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
             f.write(str(k) + " " + str(l) + " " + str(flow) + '\n')
         f.close()
         # runs an optimization model corresponding to the number the user inputs
+
+
         if model_name == 1:
             pumpcounter = gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, inflow,
                                       bedding_cost_sq_ft, excavation, capital_cost_pump_station, pipecost,
