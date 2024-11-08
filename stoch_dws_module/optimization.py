@@ -412,15 +412,16 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
                 treatment.append(0.1)
             else:
                 treatment.append(0)
-        df['treatment'] = treatment
+        df['treatment'] = treatment  # Adding a new column
         df1 = df.loc[df['cluster'] == cluster_count - 1]  # we assume the treatment node to a cluster
+
         #############################################################
         # find the outlet node elevation using the dataframe
-        # specify it can only come from a node with non zero demand
+        # specify it can only come from a node with non-zero demand
         # also within the aquifer
         # also have a case for when there the site is not above an aquifer
-
         # finds the road node with the least elevation to be the treatment plant from among all suitable candidates
+
         if all(df1['treatment'] == 0):
             raise Exception("This is not correct there are no nodes producing wastewater")
         if len(df1[df1['treatment'] == 1]) == 0:
@@ -509,11 +510,12 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         endnodelon = float(df.loc[df['n_id'] == outlet_node]['lon']) + 0.0001
         endnodelat = float(df.loc[df['n_id'] == outlet_node]['lat']) + 0.0001
         endnodeelev = float(df.loc[df['n_id'] == outlet_node]['elevation'])
+
+        index = [1]
         df2 = {'n_id': str(outlet_node) + 'f', 'x': 0, 'y': 0, 'geometry': Point(0, 0), 'elevation': endnodeelev,
                'n_demand': 0, 'lat': endnodelat, 'lon': endnodelon, 'cluster': -1, 'treatment': 1}
-
-
-        df = pd.concat([df, pd.DataFrame(df2)], ignore_index=True)  # ISSUE HERE
+        df2 = pd.DataFrame(df2, index=index)
+        df = pd.concat([df, df2])
         arcDistances[(outlet_node, outlet_node + 'f')] = 35
         # creating of an edge leading into the dummy node
         endlinks = [(i, j) for i, j in arcFlow if j == outlet_node]
