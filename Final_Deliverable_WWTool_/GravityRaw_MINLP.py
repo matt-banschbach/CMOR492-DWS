@@ -8,8 +8,8 @@ Created on Mon Jan 23 10:43:16 2023
 # This is the one to get familiar with
 # TOOD: Feed it the map network --- use code from the integrated file to get the network
 
-# from osgeo import ogr
-# import igraph as ig
+from osgeo import ogr
+import igraph as ig
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -332,7 +332,7 @@ for cluster in range(1, (n_groups + 1)):
     endnodeelev = float(df.loc[df['n_id'] == outlet_node]['elevation'])
     df2 = {'n_id': str(outlet_node) + 'f', 'x': 0, 'y': 0, 'geometry': Point(0, 0), 'elevation': endnodeelev,
            'n_demand': 0, 'lat': endnodelat, 'lon': endnodelon, 'cluster': -1, 'treatment': 1}
-    df = df.append(df2, ignore_index=True)
+    df.loc[len(df)] = df2
     arcDistances[(outlet_node, outlet_node + 'f')] = 35
 
     endlinks = [(i, j) for i, j in arcFlow if j == outlet_node]
@@ -658,6 +658,8 @@ for cluster in range(1, (n_groups + 1)):
     # Add one attribute
     layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
     defn = layer.GetLayerDefn()
+
+    clustergdf.plot()
 
     ## If there are multiple geometries, put the "for" loop here
 
