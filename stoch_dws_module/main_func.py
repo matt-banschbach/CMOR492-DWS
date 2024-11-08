@@ -27,7 +27,6 @@ def main():
     city_bounds = [ymax, ymin, xmax, xmin]
 
 
-    print("Getting arcs")
     # try:
     #     arc_file_names, all_nodes_df = get_arcs_2(building_coords_txt, city_bounds, cluster_number, city)
     #     print("Successfully got arcs")
