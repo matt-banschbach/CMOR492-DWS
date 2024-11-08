@@ -1,4 +1,4 @@
-from stoch_dws_module.utils import get_arcs_2, get_buildings
+from stoch_dws_module.network_creation import get_arcs_2, get_buildings
 from stoch_dws_module.main_func import main
 
 xmin = -87.5275

@@ -1,30 +1,46 @@
-from stoch_dws_module.utils import get_buildings, get_arcs_2
+from stoch_dws_module.network_creation import get_buildings, get_arcs_2
 from stoch_dws_module.optimization import get_Results
+import pandas as pd
 
 
 
 def main():
     # Working on main
 
-    state = input("What state is your bounding box in (enter the full name of the state)? ")
-    city = input("what is the name of your area of interest? ")
-    cluster_number = int(input("Number of wwtp clusters for this area? "))
+    # TODO: Theoretically we do not need to be running all of this stuff at once --- maybe just create a new main without the network creation
 
+    # state = input("What state is your bounding box in (enter the full name of the state)? ")
+    state = "Alabama"
+    # city = input("what is the name of your area of interest? ")
+    city = "Uniontown"
+    #cluster_number = int(input("Number of wwtp clusters for this area? "))
+    cluster_number = 5
 
     xmin = -87.5275
     xmax = -87.4915
     ymin = 32.4210
     ymax = 32.45930
 
-    print("Getitng buildings")
-    building_coords_txt = get_buildings(city, state, xmin, xmax, ymin, ymax)
-    print("Getting buildings done")
+
+    # building_coords_txt = get_buildings(city, state, xmin, xmax, ymin, ymax)
+    building_coords_txt = "Centralized_elevcluster_Uniontown.txt"
     city_bounds = [ymax, ymin, xmax, xmin]
 
-    print("Getting arcs")
-    arc_file_names, all_nodes_df = get_arcs_2(building_coords_txt, city_bounds, cluster_number, city)
 
-    print("Getting arcs done")
+    print("Getting arcs")
+    # try:
+    #     arc_file_names, all_nodes_df = get_arcs_2(building_coords_txt, city_bounds, cluster_number, city)
+    #     print("Successfully got arcs")
+    # except Exception as e:
+    #     print(f"Exception when running get_arcs_2: {e}")
+
+    arc_file_names = ["clust_1_road_arcs_utown.txt",
+                      "clust_2_road_arcs_utown.txt",
+                      "clust_3_road_arcs_utown.txt",
+                      "clust_4_road_arcs_utown.txt",
+                      "clust_5_road_arcs_utown.txt"]
+
+    all_nodes_df = pd.read_csv("Uniontown_df.csv")
 
     for i in arc_file_names:
         print(i)

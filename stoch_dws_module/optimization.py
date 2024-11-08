@@ -537,7 +537,7 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         endnodeelev = float(df.loc[df['n_id'] == outlet_node]['elevation'])
         df2 = {'n_id': str(outlet_node) + 'f', 'x': 0, 'y': 0, 'geometry': Point(0, 0), 'elevation': endnodeelev,
                'n_demand': 0, 'lat': endnodelat, 'lon': endnodelon, 'cluster': -1, 'treatment': 1}
-        df = df.append(df2, ignore_index=True)
+        df = pd.concat([df, df2], ignore_index=True)
         arcDistances[(outlet_node, outlet_node + 'f')] = 35
         # creating of an edge leading into the dummy node
         endlinks = [(i, j) for i, j in arcFlow if j == outlet_node]
