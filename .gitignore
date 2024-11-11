@@ -4,3 +4,5 @@ Alaska.geojson
 .venv
 cache
 .idea
+stone
+gdal*
