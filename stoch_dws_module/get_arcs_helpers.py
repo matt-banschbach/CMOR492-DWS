@@ -1,6 +1,6 @@
 import osmnx as ox
 import networkx as nx
-from stoch_dws_module.utils_2 import get_nodes_edges
+from stoch_dws_module.utils import get_nodes_edges
 from shapely.geometry import Point, MultiPoint, LineString, Polygon
 from shapely.ops import nearest_points
 from math import sqrt

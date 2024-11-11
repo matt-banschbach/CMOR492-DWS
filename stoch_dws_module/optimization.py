@@ -13,7 +13,7 @@ from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
 from scipy.spatial import distance_matrix
-from stoch_dws_module.utils_2 import make_workbook
+from stoch_dws_module.utils import make_workbook
 
 
 def correctFlow2(arcsR, outletR):

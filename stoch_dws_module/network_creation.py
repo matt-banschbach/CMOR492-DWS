@@ -10,7 +10,7 @@ import networkx as nx
 import py3dep
 from stoch_dws_module.get_arcs_helpers import initialize_bbox_graph, ensure_connectivity, get_elevation_raster, make_building_shp
 from stoch_dws_module.arcs_nodes_less import get_arcs_less_nodes
-from stoch_dws_module.utils_2 import get_nodes_edges
+from stoch_dws_module.utils import get_nodes_edges
 
 
 def get_buildings(name, in_file, xmini, xmaxi, ymini, ymaxi):
