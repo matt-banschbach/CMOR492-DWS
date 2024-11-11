@@ -13,7 +13,7 @@ from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
 from scipy.spatial import distance_matrix
-from stoch_dws_module.utils_2 import make_workbook
+from stoch_dws_module.utils import make_workbook
 
 
 def correctFlow2(arcsR, outletR):
@@ -252,7 +252,7 @@ def gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, 
     #     m.optimize()
 
     # saves all the model's variable names and their corresponding values as a txt file
-    modelname = 'Decentralized_Uniontown_' + str(cluster) + "raw_grav" + ".csv"
+    modelname = './cluster_solutions/Decentralized_Uniontown_' + str(cluster) + "raw_grav" + ".csv"
     modelfile = open(modelname, "w")
     modelfile.write('Solution Value: %g \n' % m.objVal)
     for v in m.getVars():

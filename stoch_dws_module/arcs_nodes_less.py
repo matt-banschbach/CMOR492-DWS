@@ -18,6 +18,8 @@ import rasterstats as rs
 from pyproj import Proj, transform, CRS, Transformer
 # import osgeo as ogr
 
+from stoch_dws_module.utils import cut, split_line_with_points
+
 
 def cut(line, distance):
     # Cuts a line in two at a distance from its starting point
