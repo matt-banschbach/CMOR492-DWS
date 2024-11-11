@@ -549,7 +549,7 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         #     if inflow[str(i)] == 0:
         #         nodes2.remove(i)
         # creating of a txt file with all the edges and flows for each cluster
-        f = open('./cluster_arc_flows/' + str(ngroups) + '_clust_' + str(cluster) + '_flow_for_arcs.txt', 'w')
+        f = open(str(ngroups) + '_clust_' + str(cluster) + '_flow_for_arcs.txt', 'w')
         for k, l in arcFlow:
             flow = arcFlow[k, l]
             f.write(str(k) + " " + str(l) + " " + str(flow) + '\n')

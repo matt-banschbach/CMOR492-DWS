@@ -1,10 +1,16 @@
-Solution Value: 1.30313e+06 
+Solution Value: 1.28822e+06 
 DIAMETER[R113,R40,0.2] 1 
 DIAMETER[R113,R40,0.25] 0 
 DIAMETER[R113,R40,0.3] 0 
 DIAMETER[R113,R40,0.35] 0 
 DIAMETER[R113,R40,0.4] 0 
 DIAMETER[R113,R40,0.45] 0 
+DIAMETER[R409,R408,0.2] 1 
+DIAMETER[R409,R408,0.25] 0 
+DIAMETER[R409,R408,0.3] 0 
+DIAMETER[R409,R408,0.35] 0 
+DIAMETER[R409,R408,0.4] 0 
+DIAMETER[R409,R408,0.45] 0 
 DIAMETER[R408,R407,0.2] 1 
 DIAMETER[R408,R407,0.25] 0 
 DIAMETER[R408,R407,0.3] 0 
@@ -23,12 +29,6 @@ DIAMETER[R406,R113,0.3] 0
 DIAMETER[R406,R113,0.35] 0 
 DIAMETER[R406,R113,0.4] 0 
 DIAMETER[R406,R113,0.45] 0 
-DIAMETER[R412,R411,0.2] 1 
-DIAMETER[R412,R411,0.25] 0 
-DIAMETER[R412,R411,0.3] 0 
-DIAMETER[R412,R411,0.35] 0 
-DIAMETER[R412,R411,0.4] 0 
-DIAMETER[R412,R411,0.45] 0 
 DIAMETER[R411,R410,0.2] 1 
 DIAMETER[R411,R410,0.25] 0 
 DIAMETER[R411,R410,0.3] 0 
@@ -41,12 +41,12 @@ DIAMETER[R410,R409,0.3] 0
 DIAMETER[R410,R409,0.35] 0 
 DIAMETER[R410,R409,0.4] 0 
 DIAMETER[R410,R409,0.45] 0 
-DIAMETER[R409,R408,0.2] 1 
-DIAMETER[R409,R408,0.25] 0 
-DIAMETER[R409,R408,0.3] 0 
-DIAMETER[R409,R408,0.35] 0 
-DIAMETER[R409,R408,0.4] 0 
-DIAMETER[R409,R408,0.45] 0 
+DIAMETER[R412,R411,0.2] 1 
+DIAMETER[R412,R411,0.25] 0 
+DIAMETER[R412,R411,0.3] 0 
+DIAMETER[R412,R411,0.35] 0 
+DIAMETER[R412,R411,0.4] 0 
+DIAMETER[R412,R411,0.45] 0 
 DIAMETER[R40,R40f,0.2] 1 
 DIAMETER[R40,R40f,0.25] 0 
 DIAMETER[R40,R40f,0.3] 0 
@@ -54,32 +54,32 @@ DIAMETER[R40,R40f,0.35] 0
 DIAMETER[R40,R40f,0.4] 0 
 DIAMETER[R40,R40f,0.45] 0 
 In Node Elevation[R113] 65.063 
-In Node Elevation[R408] 68.063 
+In Node Elevation[R409] 69.063 
 In Node Elevation[R406] 66.063 
 In Node Elevation[R40f] 81.2383 
-In Node Elevation[R412] 72.063 
-In Node Elevation[R40] 65.0614 
-In Node Elevation[R409] 69.063 
-In Node Elevation[R407] 67.063 
+In Node Elevation[R40] 65.0617 
 In Node Elevation[R411] 71.063 
+In Node Elevation[R408] 68.063 
+In Node Elevation[R407] 67.063 
 In Node Elevation[R410] 70.063 
+In Node Elevation[R412] 72.063 
 Out Node Elevation[R113] 65.063 
-Out Node Elevation[R408] 68.063 
+Out Node Elevation[R409] 69.063 
 Out Node Elevation[R406] 66.063 
 Out Node Elevation[R40f] 81.2383 
-Out Node Elevation[R412] 72.063 
 Out Node Elevation[R40] 81.2835 
-Out Node Elevation[R409] 69.063 
-Out Node Elevation[R407] 67.063 
 Out Node Elevation[R411] 71.063 
+Out Node Elevation[R408] 68.063 
+Out Node Elevation[R407] 67.063 
 Out Node Elevation[R410] 70.063 
+Out Node Elevation[R412] 72.063 
 Difference Between Node Elevations[R113] 0 
-Difference Between Node Elevations[R408] 0 
+Difference Between Node Elevations[R409] 0 
 Difference Between Node Elevations[R406] 0 
 Difference Between Node Elevations[R40f] 0 
-Difference Between Node Elevations[R412] 0 
-Difference Between Node Elevations[R40] 16.5269 
-Difference Between Node Elevations[R409] 0 
-Difference Between Node Elevations[R407] 0 
+Difference Between Node Elevations[R40] 16.5266 
 Difference Between Node Elevations[R411] 0 
+Difference Between Node Elevations[R408] 0 
+Difference Between Node Elevations[R407] 0 
 Difference Between Node Elevations[R410] 0 
+Difference Between Node Elevations[R412] 0 

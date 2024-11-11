@@ -33,11 +33,11 @@ def main():
     # except Exception as e:
     #     print(f"Exception when running get_arcs_2: {e}")
 
-    arc_file_names = ["./cluster_road_arcs/clust_1_road_arcs_utown.txt",
-                      "./cluster_road_arcs/clust_2_road_arcs_utown.txt",
-                      "./cluster_road_arcs/clust_3_road_arcs_utown.txt",
-                      "./cluster_road_arcs/clust_4_road_arcs_utown.txt",
-                      "./cluster_road_arcs/clust_5_road_arcs_utown.txt"]
+    arc_file_names = ["clust_1_road_arcs_utown.txt",
+                      "clust_2_road_arcs_utown.txt",
+                      "clust_3_road_arcs_utown.txt",
+                      "clust_4_road_arcs_utown.txt",
+                      "clust_5_road_arcs_utown.txt"]
 
     all_nodes_df = pd.read_csv("Uniontown_df.csv")
 

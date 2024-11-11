@@ -5,6 +5,12 @@ DIAMETER[R393,R88,0.3] 0
 DIAMETER[R393,R88,0.35] 0 
 DIAMETER[R393,R88,0.4] 0 
 DIAMETER[R393,R88,0.45] 0 
+DIAMETER[R392,R393,0.2] 1 
+DIAMETER[R392,R393,0.25] 0 
+DIAMETER[R392,R393,0.3] 0 
+DIAMETER[R392,R393,0.35] 0 
+DIAMETER[R392,R393,0.4] 0 
+DIAMETER[R392,R393,0.45] 0 
 DIAMETER[R390,R88,0.2] 1 
 DIAMETER[R390,R88,0.25] 0 
 DIAMETER[R390,R88,0.3] 0 
@@ -17,12 +23,6 @@ DIAMETER[R388,R88,0.3] 0
 DIAMETER[R388,R88,0.35] 0 
 DIAMETER[R388,R88,0.4] 0 
 DIAMETER[R388,R88,0.45] 0 
-DIAMETER[R392,R393,0.2] 1 
-DIAMETER[R392,R393,0.25] 0 
-DIAMETER[R392,R393,0.3] 0 
-DIAMETER[R392,R393,0.35] 0 
-DIAMETER[R392,R393,0.4] 0 
-DIAMETER[R392,R393,0.45] 0 
 DIAMETER[R391,R392,0.2] 1 
 DIAMETER[R391,R392,0.25] 0 
 DIAMETER[R391,R392,0.3] 0 
@@ -36,23 +36,23 @@ DIAMETER[R88,R88f,0.35] 0
 DIAMETER[R88,R88f,0.4] 0 
 DIAMETER[R88,R88f,0.45] 0 
 In Node Elevation[R393] 83.9548 
-In Node Elevation[R88] 83.9547 
-In Node Elevation[R88f] 87.3714 
+In Node Elevation[R392] 84.9548 
 In Node Elevation[R390] 84.9403 
 In Node Elevation[R388] 86.4362 
-In Node Elevation[R392] 84.9548 
+In Node Elevation[R88f] 87.3714 
 In Node Elevation[R391] 85.9925 
+In Node Elevation[R88] 83.9547 
 Out Node Elevation[R393] 83.9548 
-Out Node Elevation[R88] 87.4166 
-Out Node Elevation[R88f] 87.3714 
+Out Node Elevation[R392] 84.9548 
 Out Node Elevation[R390] 84.9403 
 Out Node Elevation[R388] 86.4362 
-Out Node Elevation[R392] 84.9548 
+Out Node Elevation[R88f] 87.3714 
 Out Node Elevation[R391] 85.9925 
+Out Node Elevation[R88] 87.4166 
 Difference Between Node Elevations[R393] 0 
-Difference Between Node Elevations[R88] 3.76666 
-Difference Between Node Elevations[R88f] 0 
+Difference Between Node Elevations[R392] 0 
 Difference Between Node Elevations[R390] 0 
 Difference Between Node Elevations[R388] 0 
-Difference Between Node Elevations[R392] 0 
+Difference Between Node Elevations[R88f] 0 
 Difference Between Node Elevations[R391] 0 
+Difference Between Node Elevations[R88] 3.76666 
