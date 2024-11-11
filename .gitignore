@@ -1,3 +1,7 @@
 stone
 Alabama.geojson
+Alabama.geojson.zip
+.venv
+cache
+stone
 gdal*
