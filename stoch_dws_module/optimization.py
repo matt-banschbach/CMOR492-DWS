@@ -360,12 +360,12 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
     bedding_cost_sq_ft = bed
     capital_cost_pump_station = capex_PS
     ps_flow_cost = ps_flow
-    ps_OM_cost = ps_OM
+    PS_OM = ps_OM
     treat_om = treat_o
     hometreatment = h_treat
     fixed_treatment_cost = fixed_treat
     added_post_proc = added_post  # for gallons per day so use arcFlow values
-    collection_om = collect_o
+    COL_OM = collect_o
 
     # define aquifer boundaries:
     # we need to know aquifer boundaries to identify these potential treatment nodes
@@ -560,7 +560,7 @@ def get_Results(model_name, pipe_dictionary, arb_min_slope, arb_max_slope, node_
         if model_name == 1:
             pumpcounter = gravity_Raw(arcFlow, arcs, nodes2, df, pipesize, outlet_node, arcDistances, inflow,
                                       bedding_cost_sq_ft, excavation, capital_cost_pump_station, pipecost,
-                                      collection_om, ps_OM_cost, treat_om, fixed_treatment_cost, added_post_proc,
+                                      COL_OM, PS_OM, treat_om, fixed_treatment_cost, added_post_proc,
                                       hometreatment, Sheet, cluster_count, Pumps, pumpcounter, building_num)
 
 
