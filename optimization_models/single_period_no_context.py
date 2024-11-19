@@ -2,29 +2,37 @@ import gurobipy as gp
 import numpy as np
 import networkx as nx
 
+# global params
+V_min = 0.6
+V_max = 3
 
-def set_treatment_nodes(G, num_treatment):
-    elevations = np.array([node['pos'][2] for node in G.nodes])
-    elev_sorted = np.argsort(elevations)[:num_treatment]
+CT = 1000
+CB = 5
+CE = 5
 
+
+def random_flow_parameters(G, source, treatment, mu, sigma):
+    SR = {}
+    CAP = {}
+
+    for node in source:
+        flow = np.random.normal(mu, sigma)
+        G.nodes[node]['production'] = flow
+        SR[node] = flow
+
+    total_flow = sum(SR.values())
+
+    for node in treatment:
+        capacity = 1.25 * (total_flow / len(treatment))
+        G.nodes[node]['capacity'] = capacity
+        CAP[node] = capacity
+
+
+    return G, SR, CAP
 
 
 def make_graph():
-    pts = np.array([np.random.uniform([-20, -20, 0], [20, 20, 5]) for _ in range(50)])
-    G = nx.Graph()
-    for i in range(len(pts)):
-        G.add_node(i, pos=tuple(pts[i]))
-
-    graph_complete = nx.complete_graph(G)
-    for u, v in graph_complete.edges():
-        pos_u = graph_complete.nodes[u]['pos']
-        pos_v = graph_complete.nodes[v]['pos']
-        distance = np.linalg.norm(np.array(pos_u) - np.array(pos_v))
-        graph_complete[u][v]['weight'] = distance
-
-
-
-
+    pass
 
 
 
