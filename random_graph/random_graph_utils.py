@@ -1,5 +1,11 @@
 import numpy as np
 import networkx as nx
+import random
+
+__all__=[
+    'connect_nearest_neighbors',
+    'make_connected'
+]
 
 def connect_nearest_neighbors(G):
   """Connects each node to its three nearest neighbors based on 3D positions.
