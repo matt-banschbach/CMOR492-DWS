@@ -38,8 +38,7 @@ def make_graph():
 
 
 def single_period_no_context():
-
-
+    pass
 
 def main(num_points):
 
