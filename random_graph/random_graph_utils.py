@@ -1,11 +1,20 @@
 import numpy as np
 import networkx as nx
 import random
+import matplotlib.pyplot as plt
 
 __all__=[
     'connect_nearest_neighbors',
-    'make_connected'
+    'make_connected',
+    'draw_treatment_visual'
 ]
+
+def draw_treatment_visual(G):
+    node_colors = ['red' if G.nodes[node]['treatment'] == 1 else 'blue' for node in G.nodes]
+    nx.draw(G, node_color=node_colors, with_labels=True, pos=[G.nodes[node]['pos'][:2] for node in G.nodes])
+    plt.title("Illustrate Treatment nodes")
+    plt.show()
+
 
 def connect_nearest_neighbors(G):
   """Connects each node to its three nearest neighbors based on 3D positions.
