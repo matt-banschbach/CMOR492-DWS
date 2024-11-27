@@ -24,7 +24,7 @@ def process_treatments(G, num_treatment):
     return G, source_nodes, treatment_nodes
 
 
-def make_random_geometric_graph(n, lower_bounds, upper_bounds):
+def make_random_geometric_graph(n, lower_bounds, upper_bounds, num_treatment, radius):
     """
     :param n: number of nodes in the graph
     :param lower_bounds: lower bound of x, y, z coordinates
@@ -36,16 +36,16 @@ def make_random_geometric_graph(n, lower_bounds, upper_bounds):
         treatment_nodes: a list of each treatment node index
 
     """
-    pts = np.array([np.random.uniform([-20, -20, 0], [20, 20, 5]) for _ in range(n)])  # Generate Nodes
+    pts = np.array([np.random.uniform(lower_bounds, upper_bounds) for _ in range(n)])  # Generate Nodes
     pos = {i: pts[i] for i in range(n)}
-    G = nx.random_geometric_graph(n, radius=7, pos=pos, dim=3).to_undirected()
+    G = nx.random_geometric_graph(n, radius=radius, pos=pos, dim=3)
 
     for u, v in G.edges:  # Add edges to graph
         distance = np.linalg.norm(G.nodes[v]['pos'] - G.nodes[u]['pos'])
         G.edges[u, v]['distance'] = distance
 
     elevations = [G.nodes[i]['pos'][2] for i in G.nodes]  # Get all the elevations
-    treatment_idxs = np.argsort(elevations)[:20]  # Get the indices of the 5 lowest elevation nodes
+    treatment_idxs = np.argsort(elevations)[:num_treatment]  # Get the indices of the lowest elevation nodes
 
     for i in G.nodes:  # Add treatment attribute to Graph
         if i in treatment_idxs:

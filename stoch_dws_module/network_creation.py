@@ -24,18 +24,19 @@ def get_buildings(name, in_file, xmini, xmaxi, ymini, ymaxi):
 
     filename = f"C:\\Users\mbans\Desktop\CMOR492-DWS\DWS\\{in_file}"
     filename = "./Alabama.geojson"
-    file = gpd.read_file(filename)
-    clip_gdf = gpd.clip(file, city_limits)
+    geojson_file = gpd.read_file(filename)
+    clip_gdf = gpd.clip(geojson_file, city_limits)  # Cut out only the town limits of the geojson file
+
 
     # get all these coordinates on a csv
     export_file_name = f"Centralized_elevcluster_{name}.txt"
-
-    counter = 0
 
     # Avoiding Depreciation Warning
     outProj = CRS.from_epsg(2163)
     inProj = CRS.from_epsg(4326)
     transformer = Transformer.from_crs(inProj, outProj)
+
+    counter = 0
 
     f = open(export_file_name, "w")
     f.write("buildings,V1,V2,V3\n")
@@ -46,36 +47,46 @@ def get_buildings(name, in_file, xmini, xmaxi, ymini, ymaxi):
         # gets the area of the building
         # when you have more than one polygon
         if type(i) == shapely.geometry.multipolygon.MultiPolygon:
-            area_sum = 0
-            # gets all the coordinates of the buiding polygon to change it into meters
-            # iterates through the polygons
-            for k in i:
-                x_list = list(k.exterior.coords.xy[0])
-                y_list = list(k.exterior.coords.xy[1])
+            try:
+                # area_sum = 0
+                # gets all the coordinates of the building polygon to change it into meters
+                # iterates through the polygons
+                for k in i:
+                    x_list = list(k.exterior.coords.xy[0])
+                    y_list = list(k.exterior.coords.xy[1])
+                    for j in range(len(x_list) - 1):
+                        x0 = x_list[j]
+                        y0 = y_list[j]
+                        # x1, y1 = transform(inProj, outProj, x0, y0)
+                        x1, y1 = transformer.transform(x0, y0)
+                        poly_list.append(Point(x1, y1))
+                    poly = Polygon(poly_list)  # change it into meters
+
+                area_sum = poly.area  # finds the area of the polygon in m^2
+
+                f.write(b_name + "," + str(i.centroid.x) + "," + str(i.centroid.y) + "," + str(area_sum) + "\n")
+            except Exception as e:
+                print(f"Failed to get building {counter}, which is a MultiPolygon")
+                print(f"Exception: {e}")
+                raise e
+
+        elif type(i) == shapely.geometry.polygon.Polygon:  # in the case when the building is only one polygon
+            try:
+                x_list = list(i.exterior.coords.xy[0])
+                y_list = list(i.exterior.coords.xy[1])
                 for j in range(len(x_list) - 1):
                     x0 = x_list[j]
                     y0 = y_list[j]
-                    # x1, y1 = transform(inProj, outProj, x0, y0)
-                    x1, y1 = transformer.transform(x0, y0)
+                    x1, y1 = transformer.transform(x0, y0)  # [DOCUMENT THIS]
                     poly_list.append(Point(x1, y1))
-                poly = Polygon(poly_list)  # change it into meters
-            area_sum += poly.area  # finds the area of the polygon in m^2
-            # writes down the coordinates and the building area
-            f.write(b_name + "," + str(i.centroid.x) + "," + str(i.centroid.y) + "," + str(area_sum) + "\n")
-        # in the case when the building is only one polygon
-        elif type(i) == shapely.geometry.polygon.Polygon:
-            x_list = list(i.exterior.coords.xy[0])
-            y_list = list(i.exterior.coords.xy[1])
-            for j in range(len(x_list) - 1):
-                x0 = x_list[j]
-                y0 = y_list[j]
-                x1, y1 = transformer.transform(x0, y0)
-                poly_list.append(Point(x1, y1))
-            poly = Polygon(poly_list)
-            f.write(b_name + "," + str(i.centroid.x) + "," + str(i.centroid.y) + "," + str(poly.area) + "\n")
-    # saves the txt file to the computer
+                poly = Polygon(poly_list)
+                f.write(b_name + "," + str(i.centroid.x) + "," + str(i.centroid.y) + "," + str(poly.area) + "\n")
+            except Exception as e:
+                print(f"Failed to get building {counter}, which is a Polygon")
+                print(f"Exception: {e}")
+                raise e
+
     f.close()
-    # returns the name of the txt file
     return export_file_name
 
 def get_arcs_2(building_txt, city_bounds, ngroup, city):
