@@ -38,10 +38,25 @@ def downhill_descent(G, start):
 
     return current_node # At this point min_nbr will be the local minima
 
-def multistar_downhill_descent(G, k_start):
+def multistart_downhill_descent(G, k_start):
     start_nodes = random.sample(sorted(G.nodes), k_start)
     local_minima = set()
     for start in start_nodes:
         local_minima.add(downhill_descent(G, start))
 
     return local_minima
+
+def source_treatment(G, k, visualize=False):
+    treatment_nodes = multistart_downhill_descent(G, k)
+
+    if visualize:
+        node_colors = ['r' if node in treatment_nodes else '#336699' for node in G.nodes()]
+        node_sizes = [50 if node in treatment_nodes else 15 for node in G.nodes()]
+        ox.plot_graph(G, node_color=node_colors, node_size=node_sizes, edge_color='#999999', edge_linewidth=0.5)
+
+    source_nodes = []
+    for node in G.nodes:
+        if node not in treatment_nodes:
+            source_nodes.append(node)
+
+    return source_nodes, treatment_nodes
