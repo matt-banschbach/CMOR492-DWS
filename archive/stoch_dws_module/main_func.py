@@ -1,5 +1,4 @@
-from stoch_dws_module.network_creation import get_buildings, get_arcs_2
-from stoch_dws_module.optimization import get_Results
+from archive.stoch_dws_module.optimization import get_Results
 import pandas as pd
 
 
