@@ -3,6 +3,8 @@ import networkx as nx
 from matplotlib import pyplot as plt
 import geopandas as gpd
 from configparser import ConfigParser
+import numpy as np
+import random
 
 def get_road_net(place):
 
@@ -20,3 +22,26 @@ def get_road_net(place):
     ox.save_graphml(G, 'road_net_2.graphml')
 
     return G
+
+
+def get_min_neighbor(G, node):
+    neighbors = G.neighbors(node)
+    return min(neighbors, key=lambda n: G.nodes[n]['z'])
+
+def downhill_descent(G, start):
+    current_node = start
+    while True:
+        min_nbr = get_min_neighbor(G, current_node)
+        if G.nodes[min_nbr]['z'] >= G.nodes[current_node]['z']:
+            break
+        current_node = min_nbr
+
+    return current_node # At this point min_nbr will be the local minima
+
+def multistar_downhill_descent(G, k_start):
+    start_nodes = random.sample(G.nodes(), k_start)
+    local_minima = []
+    for start in start_nodes:
+        local_minima.append(downhill_descent(G, start))
+
+    return local_minima
