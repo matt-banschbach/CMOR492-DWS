@@ -1,8 +1,8 @@
 Alabama.geojson
 Alabama.geojson.zip
-Alaska.geojson
 .venv
 cache
 .idea
 stone
 gdal*
+config.ini
