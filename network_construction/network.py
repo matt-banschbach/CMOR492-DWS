@@ -47,6 +47,24 @@ def multistart_downhill_descent(G, k_start):
 
     return local_minima
 
+def get_Utown():
+
+    G0 = ox.load_graphml("road_net_2.graphml")
+    G = nx.DiGraph()
+
+    # Copy nodes and their attributes
+    G.add_nodes_from(G0.nodes(data=True))
+
+    # Iterate through edges and add them to the new graph
+    for edge in G0.edges(data=True):
+        u, v = edge[0], edge[1]
+        attr = edge[2]
+        G.add_edge(u, v, **attr)
+
+    return G
+
+
+
 def source_treatment(G, k, visualize=False):
     treatment_nodes = multistart_downhill_descent(G, k)
 
