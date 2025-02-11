@@ -4,46 +4,34 @@ Created on Sun Jun  4 19:01:30 2023
 
 @author: yunus
 """
-import sys
-import os
 # import geopandas as gpd
 # from shapely.geometry.polygon import Polygon
 from sklearn.cluster import AgglomerativeClustering
-from math import sin, cos, sqrt, atan2, radians
+from math import sqrt
 import numpy as np
-import pickle
 import geopandas as gpd
 # import tifffile as tiff #needed for the tif data for perry county
 #import igraph as ig
 import pandas as pd
-import matplotlib.pyplot as plt
 #from scipy.spatial import distance_matrix
 #from math import sin, cos, sqrt, atan2, radians
 #import sys
 # from xlwt import Workbook
 import shapely
-from shapely.ops import snap, split, nearest_points, substring
+from shapely.ops import nearest_points
 #from shapely.geometry import MultiPoint, LineString
-from shapely.geometry import Polygon, box, Point, MultiPoint, LineString, MultiLineString, GeometryCollection
+from shapely.geometry import Polygon, Point, MultiPoint, LineString, MultiLineString
 #from dbfread import DBF
 import osmnx as ox
 import networkx as nx
-import copy
 import fiona
 import rioxarray as rxr
 #import earthpy.plot as ep
 import rasterstats as rs
-import os
 import py3dep
-from scipy.spatial import distance_matrix
-from scipy.cluster.hierarchy import dendrogram, linkage
-from matplotlib import pyplot as plt
-import xlwt
-from xlwt import Workbook
-import pyproj
 from pyproj import Proj, transform
 # import osgeo as ogr
-from Final_Deliverable_WWTool_.optimization_model_functions import get_Results
+from archive.Final_Deliverable_WWTool_.optimization_model_functions import get_Results
 
 #pulling out the elevation for a given bounding box
 def get_elevation_raster(bbox, name):
@@ -137,7 +125,7 @@ def get_buildings(xmini, xmaxi, ymini, ymaxi):
     
     # filename = "https://usbuildingdata.blob.core.windows.net/usbuildings-v2/" + state +  ".geojson.zip"
 
-    filename = "C:\\Users\mbans\Desktop\CMOR492-DWS\DWS\Alabama.geojson.zip"
+    filename = "/Alabama.geojson.zip"
     file = gpd.read_file(filename)
     clip_gdf = gpd.clip(file, city_limits)
     
