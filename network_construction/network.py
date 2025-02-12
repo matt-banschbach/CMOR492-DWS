@@ -40,7 +40,8 @@ def downhill_descent(G, start):
     return current_node # At this point min_nbr will be the local minima
 
 def multistart_downhill_descent(G, k_start):
-    start_nodes = random.sample(sorted(G.nodes), k_start)
+    # start_nodes = random.sample(sorted(G.nodes), k_start)
+    start_nodes = G.nodes
     local_minima = set()
     for start in start_nodes:
         local_minima.add(downhill_descent(G, start))
