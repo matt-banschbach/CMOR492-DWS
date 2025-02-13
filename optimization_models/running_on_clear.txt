@@ -1,0 +1,40 @@
+### LOGGING IN AND COPYING FILES ###
+
+# This command lets you log into the clear cluster.
+    ssh [net_id]@ssh.clear.rice.edu
+# so if your net id was 'aca3' you would enter:   ssh aca3@ssh.clear.rice.edu
+
+# you then want to copy the model file onto the clear cluster. To do this run this command on your computer:
+    scp [model_file] [net_id]@ssh.clear.rice.edu:~
+
+
+
+### INITIALIZATION ###
+
+# These two commands let you use gurobi_cl in the command line.
+# I recommend pasting them at the end out your .tcshrc file so that is is automatically set up when you log in,
+# but you can also just copy past them into the terminal directly after you log in
+    setenv LD_LIBRARY_PATH "/opt/jul1.10.5-gur11.0-depot/artifacts/1cf3993225db760f620b7a50047dda0abc07e2a1/lib"
+    source /clear/apps/gurobi/gurobiEnv.csh
+
+*** Troubleshooting Initialization ***
+# try running just the 'source /clear/apps/gurobi/gurobiEnv.csh' command first and then run 'gurobi_cl --version' and see if it gives an error.
+# if the error is something like 'gurobi_cl: error while loading shared libraries: libgurobi110.so: cannot open shared object file: No such file or directory' then try running:
+    find /opt/ -name "libgurobi110.so"
+# and use one of the paths it gives for the ( setenv LD_LIBRARY_PATH "/opt/jul1.10.5-gur11.0-depot/artifacts/1cf3993225db760f620b7a50047dda0abc07e2a1/lib" ) command you run
+# If that doesn't solve it, I don't know
+
+
+### RUNNING THE MODEL ##
+
+# Run the command:
+    gurobi_cl ResultFile=[solution_file] [model_file]
+# Example:   gurobi_cl ResultFile=model.sol singleperiod_nocontext.lp
+# The file extensions don't really matter, they are all text documents
+
+# You can now copy the solution_file back to your computer with this command:
+    scp [solution_file] [laptop_username]@[laptop_ip_address]:[path_to_copy_to]
+
+# And you can process the result more by removing all zero-valued variables with this command:
+    awk '$2>0 {print $1, $2, $3, $4, $5}' [solution_file] > [non_zero_solution_file]
+
