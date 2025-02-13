@@ -12,7 +12,7 @@
 ### INITIALIZATION ###
 
 # These two commands let you use gurobi_cl in the command line.
-# I recommend pasting them at the end out your .tcshrc file so that is is automatically set up when you log in,
+# I recommend pasting them at the end of your .tcshrc file so that is is automatically set up when you log in,
 # but you can also just copy past them into the terminal directly after you log in
     setenv LD_LIBRARY_PATH "/opt/jul1.10.5-gur11.0-depot/artifacts/1cf3993225db760f620b7a50047dda0abc07e2a1/lib"
     source /clear/apps/gurobi/gurobiEnv.csh
