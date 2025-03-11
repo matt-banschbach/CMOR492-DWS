@@ -31,7 +31,7 @@ class ModelOutput:
 
         self.extracted = True
     
-    def add_context(self, target):
+    def add_context(self, target: gp.Model):
         """
         Takes self.model as source and applies constraints to sink
         of target using Gurobipy methods. Relies on DWS variables.
@@ -39,14 +39,18 @@ class ModelOutput:
         if not self.extracted:
             self.extract_solution()
 
+        print(f"Fixing the start year of {target.ModelName} to {self.model.ModelName}'s solution")
+
+        # Perhaps a List[Dict] attribute instead, formed by extracting values from variable references
+
         orig_hold = {prefix: {var_name: value for var_name, value in self.solution.items() \
                               if var_name.startswith(prefix)} \
                                 for prefix in ("x", "y", "z", "d", "el")}
-        x_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('x')}
-        y_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('y')}
-        z_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('z')}
-        d_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('d')}
-        el_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('el')}
+        # x_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('x')}
+        # y_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('y')}
+        # z_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('z')}
+        # d_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('d')}
+        # el_0 = {var_name: value for var_name, value in self.solution.items() if var_name.startswith('el')}
 
         # x_0_c = target.addConstrs((x[i, j, 0] == x_0[i, j] for i, j in Path.keys()), name='x_0')
 
