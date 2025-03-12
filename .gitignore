@@ -7,7 +7,6 @@ stone
 gdal*
 config.ini
 archive/utown_example_graph.png
-
-
-optimization_models/archive
+random_graph
 CMOR492-DWS_venv1
+optimization_models/archive
