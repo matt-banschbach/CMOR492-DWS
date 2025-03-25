@@ -39,8 +39,7 @@ def downhill_descent(G, start):
 
     return current_node # At this point min_nbr will be the local minima
 
-def multistart_downhill_descent(G, k_start):
-    # start_nodes = random.sample(sorted(G.nodes), k_start)
+def multistart_downhill_descent(G):
     start_nodes = G.nodes
     local_minima = set()
     for start in start_nodes:
@@ -66,8 +65,8 @@ def get_Utown():
 
 
 
-def source_treatment(G, k, visualize=False):
-    treatment_nodes = multistart_downhill_descent(G, k)
+def source_treatment(G, visualize=False):
+    treatment_nodes = multistart_downhill_descent(G)
 
     if visualize:
         node_colors = ['r' if node in treatment_nodes else '#336699' for node in G.nodes()]
