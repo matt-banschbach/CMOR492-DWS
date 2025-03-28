@@ -38,7 +38,33 @@ class ModelOutput:
                 'd': d_0,
                 'el': el_0
             }
-    
+
+    def feed_position_constraints(self, target, x, y, Path, treatment_nodes):
+        """
+        Takes self.model as source and applies constraints to sink
+        of target using Gurobipy methods. Relies on DWS variables.
+        """
+        if not self.replicate:
+            return "No solution to replicate."
+        
+        x_0_c = target.addConstrs((x[i, j, 0] == self.replicate["x"][i, j] for i, j in Path.keys()), name='x_0')
+
+        y_0_c = target.addConstrs((y[j, 0] == self.replicate["y"][j] for j in treatment_nodes), name='y_0')
+
+
+    def feed_graph_constraints(self, target, z, G, d, D, el):
+        """Takes self.model as source and applies constraints to sink
+        of target using Gurobipy methods. Relies on DWS variables."""
+
+        if not self.replicate:
+            return "No solution to replicate."
+
+        z_0_c = target.addConstrs((z[*e, 0] == self.replicate["z"][e] for e in G.edges), name='z_0')
+
+        d_0_c = target.addConstrs((d[*e, s, 0] == self.replicate["d"][*e, s] for e in G.edges for s in D), name='d_0')
+
+        el_0_c = target.addConstrs((el[u, 0] == self.replicate["el"][u] for u in G.nodes), name='el_0')
+
     def extract_solution(self):
         """
         Extract and store the solution details from the model.
@@ -53,7 +79,7 @@ class ModelOutput:
 
         self.extracted = True
     
-    def add_context(self, target: gp.Model, x, Path): #, y, treatment_nodes, z, G, d, D, el):
+    def add_context(self, target: gp.Model): # x, Path, y, treatment_nodes, z, G, d, D, el):
         """
         Takes self.model as source and applies constraints to sink
         of target using Gurobipy methods. Relies on DWS variables.
