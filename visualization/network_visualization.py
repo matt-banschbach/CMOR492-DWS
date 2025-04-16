@@ -6,8 +6,8 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 # Change this for your local machine
-# sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
-sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
+sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
+# sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
 from network_construction.network import get_Utown, source_treatment
 
 def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
@@ -49,6 +49,21 @@ def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
     graph_new.graph["crs"] = graph_with_duplicates.graph["crs"]
     
     return graph_new
+
+def count_duplicate_edges(graph, print_duplicates=False):
+    edge_counts = {}
+    for edge in graph.edges():
+        if edge in edge_counts.keys():
+            edge_counts[edge] += 1
+        elif edge[::-1] in edge_counts.keys():
+            edge_counts[edge[::-1]] += 1
+        else:
+            edge_counts[edge] = 1
+
+    if print_duplicates:
+        print([edge for edge, value in edge_counts.items() if value > 1])
+
+    return edge_counts
 
 def load_decision_variables(periods):
     """ 
@@ -124,6 +139,33 @@ def generate_hex_colors(n, cmap_name='hsv'):
     colors = [mcolors.to_hex(cmap(i / (n - 1))) for i in range(n)]
     return colors
 
+def get_treatment_networks(treatment_nodes, x, y, z):
+    """ 
+    Returns an unordered list of nodes and an unordered list of edges assigned
+    to each treatment node in treatment_nodes.
+    """
+    selected_treatment_nodes = [treatment_node 
+                                for treatment_node, selected in y.items() 
+                                if selected == 1]
+    selected_paths = [path for path, selected in x.items() if selected == 1]
+    node_path_assignment = {treatment_node : [] 
+                            for treatment_node in selected_treatment_nodes}
+    edge_path_assignment = {treatment_node : [] 
+                            for treatment_node in selected_treatment_nodes}
+    
+    for treatment_node in treatment_nodes:
+        if y[treatment_node] == 1:
+            node_path_assignment.extend([path_start for (path_start, path_end) 
+                                         in selected_paths if path_end == treatment_node])
+    
+    for (u,v) in z.keys():
+        for treatment_node in selected_treatment_nodes:
+            if u in node_path_assignment[treatment_node] \
+                    and v in node_path_assignment[treatment_node]:
+                edge_path_assignment[treatment_node].append((u,v))
+
+    return (node_path_assignment, edge_path_assignment)
+
 def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z, 
                       x=None, color_treatment_nodes=False, highlighted_nodes=None, 
                       highlighted_edges=None, 
@@ -153,6 +195,7 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
             node_colors.append("#336699") # A neutral blue color
         else: 
             node_colors.append("magenta") # Uh-oh! All nodes should be either a treatment node or a source node.
+            print(f"Node {node} not a treatment node or a source node.")
 
     if x is not None:
         node_path_assignment = {treatment_node : [] for treatment_node in selected_treatment_centers}
@@ -191,5 +234,6 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
 
     node_sizes = [50 if node in treatment_nodes else 15 for node in graph.nodes]
 
-    return ox.plot_graph(G, figsize=(fig_size,fig_size), node_color=node_colors, node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors, 
+    return ox.plot_graph(graph, figsize=(fig_size,fig_size), node_color=node_colors, 
+                         node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors, 
                          edge_linewidth=edge_width, bgcolor="#000000")
