@@ -3,6 +3,7 @@ from gurobipy import GRB
 import networkx as nx
 import numpy as np
 import json
+import ast
 import sys
 sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
 from network_construction.network import source_treatment, get_Utown
@@ -13,7 +14,6 @@ class DWSOptimizationModel(object):
                  G=None, 
                  source_nodes=None,
                  treatment_nodes=None,
-                 Path=None, # Set of shortest paths from each source node i to each treatment node j
                  LE=None, # Length of each edge e
                  EL=None, # Elevation of each node v
                  D=[0.2, 0.25, 0.3, 0.35, 0.40, 0.45], # Pipe diameters
@@ -35,11 +35,12 @@ class DWSOptimizationModel(object):
                  Smax=0.1,
                  W=0.5,  # Buffer Width
                  R=0,  # Discount factor
-                 x_context_path=None, 
-                 y_context_path=None, 
-                 z_context_path=None, 
-                 a_context_path=None, 
-                 el_context_path=None):
+                 contextual=False,
+                 x_context_filename="context/x_context.json", 
+                 y_context_filename="context/y_context.json", 
+                 z_context_filename="context/z_context.json", 
+                 a_context_filename="context/a_context.json", 
+                 el_context_filename="context/el_context.json"):
         
         if G is None:
             self.G = get_Utown()
@@ -103,3 +104,36 @@ class DWSOptimizationModel(object):
         self.W = W
         self.R = R
         
+        self.contextual = contextual
+
+        if contextual:
+            self.load_context(x_context_filename, y_context_filename, 
+                              z_context_filename, a_context_filename, 
+                              el_context_filename)
+        else: 
+            self.x_context = None
+            self.y_context = None
+            self.z_context = None
+            self.a_context = None
+            self.el_context = None
+
+    def load_context(self, 
+                     x_context_filename="context/x_context.json", 
+                     y_context_filename="context/y_context.json", 
+                     z_context_filename="context/z_context.json", 
+                     a_context_filename="context/a_context.json", 
+                     el_context_filename="context/el_context.json"):
+        with open(x_context_filename, "r") as f:
+            self.x_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+
+        with open(y_context_filename, "r") as f:
+            self.y_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+
+        with open(z_context_filename, "r") as f:
+            self.z_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+
+        with open(a_context_filename, "r") as f:
+            self.a_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+
+        with open(el_context_filename, "r") as f:
+            self.el_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
