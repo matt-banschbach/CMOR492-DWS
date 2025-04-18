@@ -6,8 +6,8 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 # Change this for your local machine
-sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
-# sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
+# sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
+sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
 from network_construction.network import get_Utown, source_treatment
 
 def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
