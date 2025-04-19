@@ -120,12 +120,145 @@ class DWSOptimizationModel(object):
             self.el_context = None
             self.T = T
         
-        self.latest_stage = 0
+        self.current_period_index = 0
+        self.history = {var_name : {t : None for t in T} 
+                        for var_name 
+                        in ("x", "y", "z", "a", "el", "r", "Q", "p", "d", "c")}
 
         self.mdl = gp.Model()
 
+    def edit_constrs_next_stage(self):
+        if self.current_period_index == 1:
+            if self.contextual: 
+                self.mdl.remove(self.x_0_c)
+                self.mdl.remove(self.y_0_c)
+                self.mdl.remove(self.z_0_c)
+                self.mdl.remove(self.a_0_c)
+                self.mdl.remove(self.el_0_c)
+
+                self.mdl.remove(self.node_prod_rec)
+                self.mdl.remove(self.treat_cap)
+                self.mdl.remove(self.node_assign)
+                self.mdl.remove(self.edge_activate)
+                self.mdl.remove(self.pipe_sizing1)
+                self.mdl.remove(self.pipe_sizing2)
+                self.mdl.remove(self.a_constraint)
+                self.mdl.remove(self.node_elevation1)
+                self.mdl.remove(self.cu_cons1)
+                self.mdl.remove(self.cu_cons2)
+                self.mdl.remove(self.min_slope)
+                self.mdl.remove(self.max_slope)
+                self.mdl.remove(self.underground)
+                self.mdl.remove(self.treatment_cont)
+
+            # CHANGE IN PIPE SIZE (ensures that at most 1 new pipe size can be selected)
+            self.pipe_size_change = self.mdl.addConstrs((gp.quicksum(self.d[*e, s] for s in self.D) <= 1 for e in self.G.edges), 
+                                                name='pipe_size_change')  
+            # VERTEX ELEVATION CHANGE ASSIGNMENT
+            self.elevation_change_assignment = self.mdl.addConstrs(
+                (gp.quicksum(self.d[*e, s] for s in self.D) >= 0.5 * (self.c[e[0]] + self.c[e[1]]) + (self.z[*e] - 1) \
+                 for e in self.G.edges), 
+                name='elevation_change_assignment')
+            
+        else:
+            self.mdl.remove(self.a_constraint)
+            self.mdl.remove(self.max_elevation_change_enforcement)
+            self.mdl.remove(self.min_elevation_change_enforcement)
+            self.mdl.remove(self.treatment_plant_continuity)
+        
+        # a-CONSTRAINT (ensures that a truly represents the accurate pipe size)
+        self.a_constraint = self.mdl.addConstrs(
+            (self.a[*e, s] <= (self.d[*e, s] + self.history["a"][self.T[self.current_period_index-1]][*e, s]) 
+             for e in self.G.edges for s in self.D), name='a_constraint')
+        # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
+        # VERTEX ELEVATION CHANGE ENFORCEMENT
+        self.max_elevation_change_enforcement = self.mdl.addConstrs(
+            (self.c[u] >= (self.el[u] - self.history["el"][self.T[self.current_period_index-1]][u]) / self.M 
+             for u in self.G.nodes), name='max_elevation_change_enforcement')
+        # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
+        self.min_elevation_change_enforcement = self.mdl.addConstrs(
+            (self.c[u] >= (self.history["el"][self.T[self.current_period_index-1]][u] - self.el[u]) / self.M 
+             for u in self.G.nodes), name='min_elevation_change_enforcement')
+        # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
+
+        # TREATMENT PLANT CONTINUITY
+        self.treatment_plant_continuity = self.mdl.addConstrs((self.y[j] >= self.history["y"][self.periods[self.current_period_index-1]][j] 
+                                                               for j in self.treatment_nodes), name='treatment_plant_continuity')
+        # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
+
+    def edit_vars_next_stage(self):
+        if self.contextual:
+            self.mdl.remove(self.x)
+            self.mdl.remove(self.y)
+            self.mdl.remove(self.z)
+            self.mdl.remove(self.el)
+            self.mdl.remove(self.d)
+
+            self.x = self.mdl.addVars(self.Path.keys(), vtype=GRB.BINARY, name='x')  # Path ij used 
+            self.y = self.mdl.addVars(self.treatment_nodes, vtype=GRB.BINARY, name='y')  # treatment at node j 
+            self.z = self.mdl.addVars(self.G.edges, vtype=GRB.BINARY, name='z')  # edge e used 
+            self.el = self.mdl.addVars(self.G.nodes, vtype=GRB.CONTINUOUS, name='el')  # Elevation at node v 
+            self.d = self.mdl.addVars(self.G.edges, self.D, vtype=GRB.BINARY, name='d')
+
+        if not self.contextual and self.current_period_index == 1:
+            self.d = self.mdl.addVars(self.G.edges, self.D, vtype=GRB.BINARY, name='d')
+            self.c = self.c = self.mdl.addVars(self.G.nodes, vtype=GRB.BINARY, name='c')  # Whether elevation changes
+        
+        self.mdl.update()
+
+    def write_gurobidict_to_file(gurobidict, var_name, period, path_prefix=""):
+        """ 
+        Dumps the keys and values in a Gurobi variable tupledict into a json file.
+
+        Parameters
+        ----------
+        gurobidict : Gurobi tupledict
+        The Gurobi tupledict we want to record in the file.
+
+        var_name : str
+        The name of the variable (e.g. "y"), to be used in the filename.
+
+        period : Any
+        The period for which the tupledict was optimized, to be used in the filename.
+
+        path_prefix : str
+        The path to the folder where you want to create the json files.
+        """
+        with open(path_prefix + var_name + "_sol_period_" + str(period) + ".json", "w") as f:
+            json.dump({str(key) : gurobidict[key].X for key in gurobidict}, f)
+
+    def record_history(self, period_to_record, save_history=False, path_prefix=""):
+        """ 
+        Write the value of each decision variable in the given period into the 
+        already-declared historical dictionaries. The decision variables are 
+        Gurobi variables, whereas the historical dictionaries are simple 
+        {key : float} pairs for the value of each decision variable after 
+        optimization.
+
+        Parameters
+        ----------
+        period_to_record : any
+        The key for the current period, used to index into the historical dictionaries
+        """
+        for gurobi_var_dict, var_name in ((self.x,"x"), 
+                                            (self.y,"y"), 
+                                            (self.z,"z"), 
+                                            (self.a,"a"), 
+                                            (self.el,"el"), 
+                                            (self.r,"r"), 
+                                            (self.Q,"Q"), 
+                                            (self.p,"p")):
+            # Shorthand. 
+            self.history[var_name][period_to_record] = \
+                {key: gurobi_var.X for key, gurobi_var in gurobi_var_dict.items()}
+            if save_history:
+                self.write_gurobidict_to_file(var_name, period_to_record, 
+                                              path_prefix=path_prefix)
+
     def optimize(self):
         self.mdl.optimize()
+        self.record_history(self.T[self.current_period_index], save_history=True)
+        self.current_period_index += 1
 
     def set_first_stage(self):
         self.add_vars_first_stage()
