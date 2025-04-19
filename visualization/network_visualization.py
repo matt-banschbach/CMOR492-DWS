@@ -235,5 +235,43 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
     node_sizes = [50 if node in treatment_nodes else 15 for node in graph.nodes]
 
     return ox.plot_graph(graph, figsize=(fig_size,fig_size), node_color=node_colors, 
-                         node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors, 
-                         edge_linewidth=edge_width, bgcolor="#000000")
+                         node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors,
+                         edge_linewidth=edge_width,
+                         bgcolor="#000000")
+
+def plot_network_changes(graph, treatment_nodes, source_nodes, xt, yt, zt, periods, 
+                         color_treatment_nodes=False):
+    """ 
+    Assumes x, y, and z values are contained in the dictionaries xt, yt, zt
+    which are keyed by period (so they all have the same keys)
+    """
+    plots = {period: None for period in periods}
+
+    x0 = xt[periods[0]]
+    y0 = yt[periods[0]]
+    z0 = zt[periods[0]]
+
+    plots[periods[0]] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                            y0, z0, x=x0, color_treatment_nodes=color_treatment_nodes)
+    
+    # Now that we've recorded the initial values, we only want to iterate on 
+    # the subsequent ones.
+    # periods = periods[1:]
+    # xt = {period: xt[period] for period in periods}
+    # yt = {period: yt[period] for period in periods}
+    # zt = {period: zt[period] for period in periods}
+
+    for prev_period_index, period in enumerate(periods[1:]):
+        prev_period = periods[prev_period_index]
+        edges_changed = which_elements_change(zt[period], zt[prev_period])
+        nodes_changed_list = []
+        for edge in edges_changed:
+            nodes_changed_list.extend(edge)
+        nodes_changed = set(nodes_changed_list)
+        plots[period] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                          yt[period], zt[period], x=xt[period], 
+                                          highlighted_edges=edges_changed, 
+                                          highlighted_nodes=nodes_changed, 
+                                          color_treatment_nodes=color_treatment_nodes)
+        
+    return plots
