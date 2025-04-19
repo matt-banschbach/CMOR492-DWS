@@ -165,12 +165,12 @@ class DWSOptimizationModel(object):
                     self.treat_cost.addTerms(self.TRFlow * self.SR[i], self.x[i, j])
 
             # OBJECTIVE EXPR 2: EXCAVATION COSTS
-            excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * a[u, v, s]) for s in self.D))
+            excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
 
             # OBJECTIVE EXPR 3: BEself.DDING COSTS
-            bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * a[u, v, s]) for s in self.D))
+            bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
             # OBJECTIVE EXPR 4: PIPE COSTS
-            pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * a[u, v, s] for s in self.D))
+            pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.a[u, v, s] for s in self.D))
 
             excav_bed_cost = gp.quicksum(excav_cost_f(u, v) + bed_cost_f(u, v) + pipe_cost_f(u, v) for u, v in self.G.edges)
 
@@ -287,7 +287,8 @@ class DWSOptimizationModel(object):
                                              <= (1-self.z[*e, self.T[1]]) * self.M for e in self.G.edges), 
                                             name='manning_2')
 
-        else:
+        
+        else: ### If this isn't a contextual model...
             # NODE PRODUCTION MINUS RECOURSE
             self.node_prod_rec = self.mdl.addConstrs((self.p[i, j] >= (self.SR[i] * self.x[i, j]) - self.r[i] for i, j in self.Path.keys()), name='node_prod_rec')
 
