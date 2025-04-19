@@ -122,28 +122,35 @@ class DWSOptimizationModel(object):
         
         self.latest_stage = 0
 
-        self.add_vars_first_stage()
-
         self.mdl = gp.Model()
 
+    def optimize(self):
+        self.mdl.optimize()
+
+    def set_first_stage(self):
+        self.add_vars_first_stage()
+        self.add_constrs_first_stage()
+        self.set_objective_first_stage()
+
     def set_objective_first_stage(self):
+
         if self.contextual:
             # OBJECTIVE EPXR 1: TREATMENT COSTS
             self.treat_cost = gp.LinExpr()
             for j in self.treatment_nodes:
-                self.treat_cost.addTerms(self.TR, self.y[j, 1])
-                self.treat_cost.addTerms(-1*self.TR, self.y[j, 0])
+                self.treat_cost.addTerms(self.TR, self.y[j, self.T[1]])
+                self.treat_cost.addTerms(-1*self.TR, self.y[j, self.T[0]])
                 for i in self.source_nodes:
-                    self.treat_cost.addTerms(self.TRFlow * self.SR[i], self.x[i, j, 1])
+                    self.treat_cost.addTerms(self.TRFlow * self.SR[i], self.x[i, j, self.T[1]])
 
             # OBJECTIVE EXPR 2: EXCAVATION COSTS
-            self.excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u, 1]) + (self.EL[v] - self.el[v, 1])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s, 1]) for s in self.D))
+            self.excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u, self.T[1]]) + (self.EL[v] - self.el[v, self.T[1]])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s, self.T[1]]) for s in self.D))
 
             # OBJECTIVE EXPR 3: BEDDING COSTS
-            self.bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s, 1]) for s in self.D))
+            self.bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s, self.T[1]]) for s in self.D))
 
             # OBJECTIVE EXPR 4: PIPE COSTS
-            self.pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.d[u, v, s, 1] for s in self.D))
+            self.pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.d[u, v, s, self.T[1]] for s in self.D))
 
             self.excav_bed_cost = gp.quicksum(self.excav_cost_f(u, v) + self.bed_cost_f(u, v) + self.pipe_cost_f(u, v) for u, v in self.G.edges)
 
