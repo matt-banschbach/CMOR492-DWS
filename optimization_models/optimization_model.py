@@ -94,6 +94,8 @@ class DWSOptimizationModel(object):
                  SR_default=0.17, # Default initial production of all source nodes
                  CAP=None, # Capacity at each treatment node j
                  CAP_default=100, # Default initial capacity of all treatment nodes
+                 Vmin= 0.6 * 60,
+                 Vmax= 3 * 60,
                  CE=25,  # Cost of Excavation
                  CB=6,  # Cost of Bedding
                  TR=44000,  # Fixed Cost of Treatment Plant
@@ -109,7 +111,7 @@ class DWSOptimizationModel(object):
                  x_context_filename="context/x_context.json", 
                  y_context_filename="context/y_context.json", 
                  z_context_filename="context/z_context.json", 
-                 a_context_filename="context/a_context.json", 
+                 d_context_filename="context/d_context.json", 
                  el_context_filename="context/el_context.json"):
         
         if G is None:
@@ -128,18 +130,18 @@ class DWSOptimizationModel(object):
         self.L = {}  # Length of each path (distance)
         for i in self.source_nodes:
             for j in self.treatment_nodes:
-                path = nx.shortest_path(G, source=i, target=j, weight='length')
+                path = nx.shortest_path(self.G, source=i, target=j, weight='length')
                 self.Path[i, j] = path
                 self.NLinks[i, j] = len(path)-1
-                self.L[i, j] = nx.path_weight(G, path, weight='length')
+                self.L[i, j] = nx.path_weight(self.G, path, weight='length')
         
         if LE is None:
-            self.LE = {e: G.edges[e]['length'] for e in G.edges}  # Length of edge e
+            self.LE = {e: self.G.edges[e]['length'] for e in self.G.edges}  # Length of edge e
         else:
             self.LE = LE
 
         if EL is None:
-            self.EL = {v: G.nodes[v]['elevation'] for v in G.nodes}  # Elevation of node v
+            self.EL = {v: self.G.nodes[v]['elevation'] for v in self.G.nodes}  # Elevation of node v
         else:
             self.EL = EL
 
@@ -163,6 +165,8 @@ class DWSOptimizationModel(object):
         else:
             self.CAP = CAP
 
+        self.Vmin = Vmin
+        self.Vmax = Vmax
         self.CE = CE
         self.CB = CB
         self.TR = TR
@@ -177,7 +181,7 @@ class DWSOptimizationModel(object):
         self.contextual = contextual
         if self.contextual:
             self.load_context(x_context_filename, y_context_filename, 
-                              z_context_filename, a_context_filename, 
+                              z_context_filename, d_context_filename, 
                               el_context_filename)
             if np.size(T) <= 1:
                 self.T = [0,1]
@@ -185,7 +189,7 @@ class DWSOptimizationModel(object):
             self.x_context = None
             self.y_context = None
             self.z_context = None
-            self.a_context = None
+            self.d_context = None
             self.el_context = None
             self.T = T
         
@@ -200,7 +204,7 @@ class DWSOptimizationModel(object):
                      x_context_filename="context/x_context.json", 
                      y_context_filename="context/y_context.json", 
                      z_context_filename="context/z_context.json", 
-                     a_context_filename="context/a_context.json", 
+                     d_context_filename="context/d_context.json", 
                      el_context_filename="context/el_context.json"):
         """ 
         Just loads the data from the input files into key:value dictionaries.
@@ -214,8 +218,8 @@ class DWSOptimizationModel(object):
         with open(z_context_filename, "r") as f:
             self.z_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
 
-        with open(a_context_filename, "r") as f:
-            self.a_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+        with open(d_context_filename, "r") as f:
+            self.d_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
 
         with open(el_context_filename, "r") as f:
             self.el_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
@@ -227,18 +231,13 @@ class DWSOptimizationModel(object):
         it also adds d and c.
         """
         if self.contextual:
-            first_stage_T = self.T[0:1]
+            first_stage_T = self.T[0:2]
 
             self.x = self.mdl.addVars(self.Path.keys(), first_stage_T, vtype=GRB.BINARY, name='x')  # Path ij used
             self.y = self.mdl.addVars(self.treatment_nodes, first_stage_T, vtype=GRB.BINARY, name='y')  # treatment at node j
             self.z = self.mdl.addVars(self.G.edges, first_stage_T, vtype=GRB.BINARY, name='z')  # edge e used
 
-            self.a = self.mdl.addVars(self.G.edges, self.D, vtype=GRB.BINARY, name='a')  # Pipe size s at edge e
             self.el = self.mdl.addVars(self.G.nodes, first_stage_T, vtype=GRB.CONTINUOUS, name='el')  # Elevation at node el_v
-
-            self.r = self.mdl.addVars(self.source_nodes, vtype=GRB.CONTINUOUS, lb=0.0, name='r')  # flow handled at trucking at edge e
-            self.Q = self.mdl.addVars(self.G.edges, vtype=GRB.CONTINUOUS, lb=0.0, name='Q')  # Flow in Edge e
-            self.p = self.mdl.addVars(self.Path.keys(), vtype=GRB.CONTINUOUS, lb = 0.0, name='p')
 
             self.d = self.mdl.addVars(self.G.edges, self.D, first_stage_T, vtype=GRB.BINARY, name='d')  # Pipe size change s at edge e
             self.c = self.mdl.addVars(self.G.nodes, vtype=GRB.BINARY, name='c')  # Whether elevation at vertex v changes
@@ -248,12 +247,16 @@ class DWSOptimizationModel(object):
             self.y = self.mdl.addVars(self.treatment_nodes, vtype=GRB.BINARY, name='y')  # treatment at node j 
             self.z = self.mdl.addVars(self.G.edges, vtype=GRB.BINARY, name='z')  # edge e used
 
-            self.a = self.mdl.addVars(self.G.edges, self.D, vtype=GRB.BINARY, name='a')  # Pipe size s at edge e 
             self.el = self.mdl.addVars(self.G.nodes, vtype=GRB.CONTINUOUS, name='el')  # Elevation at node v 
 
-            self.r = self.mdl.addVars(self.source_nodes, vtype=GRB.CONTINUOUS, lb=0.0, name='r')  # Flow handled by trucking at edge e 
-            self.Q = self.mdl.addVars(self.G.edges, vtype=GRB.CONTINUOUS, lb=0.0, name='Q')  # Flow in Edge e 
-            self.p = self.mdl.addVars(self.Path.keys(), vtype=GRB.CONTINUOUS, lb = 0.0, name='p')  # Flow through path ij 
+        self.a = self.mdl.addVars(self.G.edges, self.D, vtype=GRB.BINARY, name='a')  # Pipe size s at edge e
+        
+        self.r = self.mdl.addVars(self.source_nodes, vtype=GRB.CONTINUOUS, lb=0.0, name='r')  # flow handled at trucking at edge e
+        self.Q = self.mdl.addVars(self.G.edges, vtype=GRB.CONTINUOUS, lb=0.0, name='Q')  # Flow in Edge e
+        self.p = self.mdl.addVars(self.Path.keys(), vtype=GRB.CONTINUOUS, lb = 0.0, name='p')
+
+        self.alpha = self.mdl.addVars(self.G.edges, self.D, lb=0, name='alpha')  # For Manning envelopes
+        self.beta = self.mdl.addVars(self.G.edges, self.D, lb=0, name='beta')  # For Manning envelopes
 
         self.mdl.update()
 
@@ -266,7 +269,7 @@ class DWSOptimizationModel(object):
             self.x_0_c = self.mdl.addConstrs((self.x[i, j, self.T[0]] == self.x_context[i, j] for i, j in self.Path.keys()), name='x_0')
             self.y_0_c = self.mdl.addConstrs((self.y[j, self.T[0]] == self.y_context[j] for j in self.treatment_nodes), name='y_0')
             self.z_0_c = self.mdl.addConstrs((self.z[*e, self.T[0]] == self.z_context[e] for e in self.G.edges), name='z_0')
-            self.a_0_c = self.mdl.addConstrs((self.a[*e, s, self.T[0]] == self.a_context[*e, s] for e in self.G.edges for s in self.D), 
+            self.d_0_c = self.mdl.addConstrs((self.d[*e, s, self.T[0]] == self.d_context[*e, s] for e in self.G.edges for s in self.D), 
                                              name='a_0')
             self.el_0_c = self.mdl.addConstrs((self.el[u, self.T[0]] == self.el_context[u] for u in self.G.nodes), name='el_0')
             
@@ -300,30 +303,38 @@ class DWSOptimizationModel(object):
                         return True
                 return False
 
-            self.flow_def = self.mdl.addConstrs((self.Q[e] == gp.quicksum(self.p[i, j] for i, j in self.Path.keys() if is_sublist(list((e[0], e[1])),self.Path[i,j])) 
+            self.flow_def = self.mdl.addConstrs((self.Q[e] == gp.quicksum(self.p[i, j] 
+                                                                          for i, j in self.Path.keys() if is_sublist(list((e[0], e[1])),self.Path[i,j])) 
                                                  for e in self.G.edges), 
                                                 name='flow_def')
             # PIPE SIZING
             self.pipe_sizing1 = self.mdl.addConstrs((gp.quicksum(self.a[*e, s] for s in self.D) == self.z[*e, self.T[1]] for e in self.G.edges), 
                                                     name='pipe_size_a')
-            self.pipe_sizing2 = self.mdl.addConstrs((gp.quicksum(self.d[*e, s, self.T[1]] for s in self.D) <= 1 for e in self.G.edges), name='pipe_sizing_d')
+            self.pipe_sizing2 = self.mdl.addConstrs((gp.quicksum(self.d[*e, s, self.T[1]] for s in self.D) <= 1 for e in self.G.edges), 
+                                                    name='pipe_sizing_d')
 
             # a-Constraint
-            self.a_constraint = self.mdl.addConstrs((self.a[*e, s] == self.d[*e, s, self.T[1]] + self.a_context[*e, s] for e in self.G.edges for s in self.D), 
+            self.a_constraint = self.mdl.addConstrs((self.a[*e, s] == self.d[*e, s, self.T[1]] + self.d_context[*e, s] 
+                                                     for e in self.G.edges for s in self.D), 
                                                     name='a_constraint')
 
             # NODE ELEVATION CHANGE
             self.node_elevation1 = self.mdl.addConstrs((gp.quicksum(self.d[*e, s, self.T[1]] for s in self.D) 
-                                                        >= (0.5 * (self.c[e[0]] - self.c[e[1]])) + (self.z[*e, self.T[1]] - 1) for e in self.G.edges), 
+                                                        >= (0.5 * (self.c[e[0]] - self.c[e[1]])) + (self.z[*e, self.T[1]] - 1) 
+                                                        for e in self.G.edges), 
                                                        name='node_elevation1')
-            self.cu_cons1 = self.mdl.addConstrs((self.c[u] >= (self.el[u, self.T[1]] - self.el_context[u]) / self.M for u in self.G.nodes), name='cu_cons1')
-            self.cu_cons2 = self.mdl.addConstrs((self.c[u] >= (self.el_context[u] - self.el[u, self.T[1]]) / self.M for u in self.G.nodes), name='cu_cons2')
+            self.cu_cons1 = self.mdl.addConstrs((self.c[u] >= (self.el[u, self.T[1]] - self.el_context[u]) / self.M for u in self.G.nodes), 
+                                                name='cu_cons1')
+            self.cu_cons2 = self.mdl.addConstrs((self.c[u] >= (self.el_context[u] - self.el[u, self.T[1]]) / self.M for u in self.G.nodes), 
+                                                name='cu_cons2')
 
             # MIN/MAX SLOPE
-            self.min_slope = self.mdl.addConstrs((self.el[e[0], self.T[1]] - self.el[e[1], self.T[1]] >= (self.LE[e] * self.Smin) - (self.M * (1 - self.z[*e, self.T[1]])) 
+            self.min_slope = self.mdl.addConstrs((self.el[e[0], self.T[1]] - self.el[e[1], self.T[1]] 
+                                                  >= (self.LE[e] * self.Smin) - (self.M * (1 - self.z[*e, self.T[1]])) 
                                                   for e in self.G.edges), 
                                                  name='min_slope')
-            self.max_slope = self.mdl.addConstrs((self.el[e[0], self.T[1]] - self.el[e[1], self.T[1]] <= (self.LE[e] * self.Smax) + (self.M * (1 - self.z[*e, self.T[1]])) 
+            self.max_slope = self.mdl.addConstrs((self.el[e[0], self.T[1]] - self.el[e[1], self.T[1]] 
+                                                  <= (self.LE[e] * self.Smax) + (self.M * (1 - self.z[*e, self.T[1]])) 
                                                   for e in self.G.edges), 
                                                  name='max_slope')
 
@@ -336,27 +347,28 @@ class DWSOptimizationModel(object):
             self.underground = self.mdl.addConstrs((self.el[u, self.T[1]] <= self.EL[u] for u in self.G.nodes), name='underground')
 
             # TREATMENT CONTINUITY
-            self.treatment_cont = self.mdl.addConstrs((self.y_context[j] <= self.y[j, self.T[1]] for j in self.treatment_nodes), name='treatment_cont')
+            self.treatment_cont = self.mdl.addConstrs((self.y_context[j] <= self.y[j, self.T[1]] for j in self.treatment_nodes), 
+                                                      name='treatment_cont')
 
             # ENVELOPES FOR MANNING
             T_ = 11.9879
             P = lambda LE, s: LE / (T_ * (s**(16/3)))
             Qmax = lambda s: self.Vmax * ((np.pi / 8) * (s**2))
 
-            self.alpha = self.mdl.addVars(self.G.edges, self.D, lb=0, name='alpha')
-            self.beta = self.mdl.addVars(self.G.edges, self.D, lb=0, name='beta')
 
-
-            self.alpha_2 = self.mdl.addConstrs((self.alpha[*e, s] >= self.Q[e] + self.a[*e, s] * Qmax(s) - ( Qmax(s)) for e in self.G.edges for s in self.D), 
-                                          name='alpha_2')
-            self.alpha_3 = self.mdl.addConstrs((self.alpha[*e, s] <= Qmax(s) * self.a[*e, s] for e in self.G.edges for s in self.D), name='alpha_3')
+            self.alpha_2 = self.mdl.addConstrs((self.alpha[*e, s] >= self.Q[e] + self.a[*e, s] * Qmax(s) - ( Qmax(s)) 
+                                                for e in self.G.edges for s in self.D), 
+                                               name='alpha_2')
+            self.alpha_3 = self.mdl.addConstrs((self.alpha[*e, s] <= Qmax(s) * self.a[*e, s] for e in self.G.edges for s in self.D), 
+                                               name='alpha_3')
             self.alpha_4 = self.mdl.addConstrs((self.alpha[*e, s] <= self.Q[e] for e in self.G.edges for s in self.D), name='alpha_4')
             self.alpha_5 = self.mdl.addConstrs((self.alpha[*e, s] <= Qmax(s) for e in self.G.edges for s in self.D), name='alpha_5')
 
             self.beta_2 = self.mdl.addConstrs((self.beta[*e, s] >= (Qmax(s) * self.Q[e]) + (Qmax(s) * self.alpha[*e, s]) - (Qmax(s)**2) 
                                           for e in self.G.edges for s in self.D), 
                                          name='beta_2')
-            self.beta_3 = self.mdl.addConstrs((self.beta[*e, s] <= Qmax(s) * self.alpha[*e, s] for e in self.G.edges for s in self.D), name='beta_3')
+            self.beta_3 = self.mdl.addConstrs((self.beta[*e, s] <= Qmax(s) * self.alpha[*e, s] for e in self.G.edges for s in self.D), 
+                                              name='beta_3')
             self.beta_4 = self.mdl.addConstrs((self.beta[*e, s] <= Qmax(s) * self.Q[e] for e in self.G.edges for s in self.D), name='beta_4')
 
             self.manning_2 = self.mdl.addConstrs((self.el[e[1], self.T[1]] - self.el[e[0], self.T[1]] + gp.quicksum(P(self.LE[e], s) * self.beta[*e, s] for s in self.D) 
@@ -415,7 +427,7 @@ class DWSOptimizationModel(object):
 
             self.alpha_2 = self.mdl.addConstrs((self.alpha[*e, s] >= self.Q[e] + self.a[*e, s] * Qmax(s) - ( Qmax(s)) for e in self.G.edges for s in self.D), name='alpha_2')
             self.alpha_3 = self.mdl.addConstrs((self.alpha[*e, s] <= Qmax(s) * self.a[*e, s] for e in self.G.edges for s in self.D), name='alpha_3')
-            self.lpha_4 = self.mdl.addConstrs((self.alpha[*e, s] <= self.Q[e] for e in self.G.edges for s in self.D), name='alpha_4')
+            self.alpha_4 = self.mdl.addConstrs((self.alpha[*e, s] <= self.Q[e] for e in self.G.edges for s in self.D), name='alpha_4')
             self.alpha_5 = self.mdl.addConstrs((self.alpha[*e, s] <= Qmax(s) for e in self.G.edges for s in self.D), name='alpha_5')
 
             self.beta_2 = self.mdl.addConstrs((self.beta[*e, s] >= (Qmax(s) * self.Q[e]) + (Qmax(s) * self.alpha[*e, s]) - (Qmax(s)**2) for e in self.G.edges for s in self.D), name='beta_2')
@@ -454,7 +466,7 @@ class DWSOptimizationModel(object):
             for i in self.source_nodes:
                 self.rec_cost.addTerms(self.CT, self.r[i])
 
-            self.mdl.setObjective(self.treat_cost + excav_bed_cost + rec_cost, GRB.MINIMIZE)
+            self.mdl.setObjective(self.treat_cost + self.excav_bed_cost + self.rec_cost, GRB.MINIMIZE)
 
             print(f"Model has {self.mdl.NumVars} variables and {self.mdl.NumConstrs} constraints.")
         
@@ -467,22 +479,22 @@ class DWSOptimizationModel(object):
                     self.treat_cost.addTerms(self.TRFlow * self.SR[i], self.x[i, j])
 
             # OBJECTIVE EXPR 2: EXCAVATION COSTS
-            excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) 
+            self.excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) 
                                                                                                                                                           for s in self.D))
 
             # OBJECTIVE EXPR 3: BEself.DDING COSTS
-            bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
+            self.bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
             # OBJECTIVE EXPR 4: PIPE COSTS
-            pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.a[u, v, s] for s in self.D))
+            self.pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.a[u, v, s] for s in self.D))
 
-            excav_bed_cost = gp.quicksum(excav_cost_f(u, v) + bed_cost_f(u, v) + pipe_cost_f(u, v) for u, v in self.G.edges)
+            self.excav_bed_cost = gp.quicksum(self.excav_cost_f(u, v) + self.bed_cost_f(u, v) + self.pipe_cost_f(u, v) for u, v in self.G.edges)
 
             # OBJECTIVE EXPR 5: RECOURSE TRUCKING
-            rec_cost = gp.LinExpr()
+            self.rec_cost = gp.LinExpr()
             for i in self.source_nodes:
-                rec_cost.addTerms(self.CT, self.r[i])
+                self.rec_cost.addTerms(self.CT, self.r[i])
 
-            self.mdl.setObjective(self.treat_cost + excav_bed_cost + rec_cost, GRB.MINIMIZE)
+            self.mdl.setObjective(self.treat_cost + self.excav_bed_cost + self.rec_cost, GRB.MINIMIZE)
 
     def set_first_stage(self):
         self.add_vars_first_stage()
@@ -496,7 +508,7 @@ class DWSOptimizationModel(object):
         self.current_period_index += 1
         return opt
 
-    def write_gurobidict_to_file(gurobidict, var_name, period, path_prefix=""):
+    def write_gurobidict_to_file(self, gurobidict, var_name, period, path_prefix=""):
         """ 
         Dumps the keys and values in a Gurobi variable tupledict into a json file.
 
@@ -542,7 +554,8 @@ class DWSOptimizationModel(object):
             self.history[var_name][period_to_record] = \
                 {key: gurobi_var.X for key, gurobi_var in gurobi_var_dict.items()}
             if save_history:
-                self.write_gurobidict_to_file(var_name, period_to_record, 
+                self.write_gurobidict_to_file(gurobi_var_dict, 
+                                              var_name, period_to_record, 
                                               path_prefix=path_prefix)
             return self.history
 
@@ -585,7 +598,7 @@ class DWSOptimizationModel(object):
                 self.mdl.remove(self.x_0_c)
                 self.mdl.remove(self.y_0_c)
                 self.mdl.remove(self.z_0_c)
-                self.mdl.remove(self.a_0_c)
+                self.mdl.remove(self.d_0_c)
                 self.mdl.remove(self.el_0_c)
 
                 self.mdl.remove(self.node_prod_rec)
