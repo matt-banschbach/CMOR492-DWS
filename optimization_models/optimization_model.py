@@ -127,6 +127,9 @@ class DWSOptimizationModel(object):
 
         self.mdl = gp.Model()
 
+    def edit_objective_next_stage(self):
+
+
     def edit_constrs_next_stage(self):
         if self.current_period_index == 1:
             if self.contextual: 
@@ -206,6 +209,19 @@ class DWSOptimizationModel(object):
         
         self.mdl.update()
 
+    def set_wastewater_flow(self, new_flow):
+        """ 
+        Sets SR given a new input flow. Can be either a scalar (all source nodes are set to that value)
+        or a dictionary keyed by node (the flow from each corresponding source node is set
+        to the value in new_flow).
+        """
+        if np.isscalar(new_flow):
+            for node in self.source_nodes:
+                self.SR[node] = new_flow
+        else:
+            for node in self.source_nodes:
+                self.SR[node] = new_flow[node]
+
     def write_gurobidict_to_file(gurobidict, var_name, period, path_prefix=""):
         """ 
         Dumps the keys and values in a Gurobi variable tupledict into a json file.
@@ -254,11 +270,13 @@ class DWSOptimizationModel(object):
             if save_history:
                 self.write_gurobidict_to_file(var_name, period_to_record, 
                                               path_prefix=path_prefix)
+            return self.history
 
     def optimize(self):
-        self.mdl.optimize()
+        opt = self.mdl.optimize()
         self.record_history(self.T[self.current_period_index], save_history=True)
         self.current_period_index += 1
+        return opt
 
     def set_first_stage(self):
         self.add_vars_first_stage()
@@ -305,7 +323,8 @@ class DWSOptimizationModel(object):
                     self.treat_cost.addTerms(self.TRFlow * self.SR[i], self.x[i, j])
 
             # OBJECTIVE EXPR 2: EXCAVATION COSTS
-            excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
+            excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) 
+                                                                                                                                                          for s in self.D))
 
             # OBJECTIVE EXPR 3: BEself.DDING COSTS
             bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.a[u, v, s]) for s in self.D))
