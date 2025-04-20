@@ -65,7 +65,7 @@ def count_duplicate_edges(graph, print_duplicates=False):
 
     return edge_counts
 
-def load_decision_variables(periods):
+def load_decision_variables(periods, folder="solutions"):
     """ 
     Loads the dictionaries containing the values of the decision variables 
     from files created by the modeling code. Each dictionary is loaded 
@@ -98,29 +98,29 @@ def load_decision_variables(periods):
     c_sol = {period : None for period in periods}
     
     for period in periods:
-        with open(f"solutions\\x_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\x_sol_period_{period}.json", "r") as f:
             x_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\y_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\y_sol_period_{period}.json", "r") as f:
             y_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\z_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\z_sol_period_{period}.json", "r") as f:
             z_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\a_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\a_sol_period_{period}.json", "r") as f:
             a_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\el_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\el_sol_period_{period}.json", "r") as f:
             el_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\r_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\r_sol_period_{period}.json", "r") as f:
             r_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\q_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\q_sol_period_{period}.json", "r") as f:
             q_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-        with open(f"solutions\\p_sol_period_{period}.json", "r") as f:
+        with open(folder + f"\\p_sol_period_{period}.json", "r") as f:
             p_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
         try:
-            with open(f"solutions\\d_sol_period_{period}.json", "r") as f:
+            with open(folder + f"\\d_sol_period_{period}.json", "r") as f:
                 d_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
         except FileNotFoundError:
             print(f"File d_sol_period_{period}.json not found.") 
         try:
-            with open(f"solutions\\c_sol_period_{period}.json", "r") as f:
+            with open(folder + f"\\c_sol_period_{period}.json", "r") as f:
                 c_sol[period] = {ast.literal_eval(key): value for key, value in json.load(f).items()}
         except FileNotFoundError:
             print(f"File c_sol_period_{period}.json not found.") 
@@ -235,5 +235,43 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
     node_sizes = [50 if node in treatment_nodes else 15 for node in graph.nodes]
 
     return ox.plot_graph(graph, figsize=(fig_size,fig_size), node_color=node_colors, 
-                         node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors, 
-                         edge_linewidth=edge_width, bgcolor="#000000")
+                         node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors,
+                         edge_linewidth=edge_width,
+                         bgcolor="#000000")
+
+def plot_network_changes(graph, treatment_nodes, source_nodes, xt, yt, zt, periods, 
+                         color_treatment_nodes=False):
+    """ 
+    Assumes x, y, and z values are contained in the dictionaries xt, yt, zt
+    which are keyed by period (so they all have the same keys)
+    """
+    plots = {period: None for period in periods}
+
+    x0 = xt[periods[0]]
+    y0 = yt[periods[0]]
+    z0 = zt[periods[0]]
+
+    plots[periods[0]] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                            y0, z0, x=x0, color_treatment_nodes=color_treatment_nodes)
+    
+    # Now that we've recorded the initial values, we only want to iterate on 
+    # the subsequent ones.
+    # periods = periods[1:]
+    # xt = {period: xt[period] for period in periods}
+    # yt = {period: yt[period] for period in periods}
+    # zt = {period: zt[period] for period in periods}
+
+    for prev_period_index, period in enumerate(periods[1:]):
+        prev_period = periods[prev_period_index]
+        edges_changed = which_elements_change(zt[period], zt[prev_period])
+        nodes_changed_list = []
+        for edge in edges_changed:
+            nodes_changed_list.extend(edge)
+        nodes_changed = set(nodes_changed_list)
+        plots[period] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                          yt[period], zt[period], x=xt[period], 
+                                          highlighted_edges=edges_changed, 
+                                          highlighted_nodes=nodes_changed, 
+                                          color_treatment_nodes=color_treatment_nodes)
+        
+    return plots
