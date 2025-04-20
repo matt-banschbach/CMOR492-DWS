@@ -128,7 +128,30 @@ class DWSOptimizationModel(object):
         self.mdl = gp.Model()
 
     def edit_objective_next_stage(self):
+        # OBJECTIVE EXPR 1: TREATMENT COSTS
+        self.treat_cost = gp.LinExpr()
+        for j in self.treatment_nodes:
+            self.treat_cost.add(self.y[j], self.TR)
+            self.treat_cost.addConstant(-self.TR * self.history["y"][self.T[self.current_period_index-1]][j])
+            for i in self.source_nodes:
+                self.treat_cost.add(self.x[i, j], self.TRFlow * self.SR[i])
 
+        if self.current_period_index == 1 and not self.contextual: # Need to change from a to d
+            # OBJECTIVE EXPR 2: EXCAVATION COSTS
+            self.excav_cost_f = lambda u, v: gp.QuadExpr(self.CE * (((self.EL[u] - self.el[u]) + (self.EL[v] - self.el[v])) / 2) 
+                                                    * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s]) for s in self.D))
+            # OBJECTIVE EXPR 3: BEDDING COSTS
+            self.bed_cost_f = lambda u, v: gp.LinExpr(self.CB * self.LE[u, v] * gp.quicksum(s + ((2*self.W) * self.d[u, v, s]) 
+                                                                                            for s in self.D))
+            # OBJECTIVE EXPR 4: PIPE COSTS
+            self.pipe_cost_f = lambda u, v: gp.LinExpr(self.LE[u, v] * gp.quicksum(self.CP[s] * self.d[u, v, s] 
+                                                                                for s in self.D))
+            self.excav_bed_cost = gp.quicksum(self.excav_cost_f(u, v) + self.bed_cost_f(u, v) + self.pipe_cost_f(u, v) 
+                                            for u, v in self.G.edges)
+
+        # Modify the objective to account for the new treatment cost and discount factor
+        self.mdl.setObjective((self.treat_cost + self.excav_bed_cost + self.rec_cost) / (1 + self.R)**self.T[self.current_period_index], 
+                              GRB.MINIMIZE)
 
     def edit_constrs_next_stage(self):
         if self.current_period_index == 1:
