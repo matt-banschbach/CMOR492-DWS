@@ -8,77 +8,80 @@ import sys
 sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
 from network_construction.network import source_treatment, get_Utown
 
+def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
+    """ 
+    Returns a new, plottable, networkx MultiDiGraph with duplicate edges removed.
+    I.e., if for nodes u and v there are multiple edges (u,v) or (v,u) in the 
+    original graph, the new graph only has one such edge.
+
+    Adds all attributes and keys from the original edges to the new graph
+    
+    Also adds the "crs" attribute to the new graph so it can be plotted
+    using OSMnx
+
+    Paramters
+    ---------
+    graph_with_duplicates : networkx.MultiDiGraph
+    
+    print_exclusions : boolean, default False
+    If set to True, prints out the nodes of an edge whenever excluded
+    
+    Returns
+    -------
+    graph_new : networkx.MultiDiGraph
+    """
+    graph_new = nx.MultiDiGraph()
+
+    # Copy nodes and their attributes
+    graph_new.add_nodes_from(graph_with_duplicates.nodes(data=True))
+
+    # Iterate through edges and, if they're not duplicates, add them to the new graph
+    included_edges = set()
+    for u, v, edge_key, data in graph_with_duplicates.edges(keys=True, data=True):
+        if (u,v) not in included_edges and (v,u) not in included_edges:
+            graph_new.add_edge(u,v,edge_key,**data)
+            included_edges.add((u,v))
+        elif print_exclusions: 
+            print(f"Duplicate edge {(u,v)} excluded")
+        
+    # Necessary to plot the new graph with OSMnx for some reason
+    graph_new.graph["crs"] = graph_with_duplicates.graph["crs"]
+    
+    return graph_new
+
+def count_duplicate_edges(graph, print_duplicates=False):
+    edge_counts = {}
+    for edge in graph.edges():
+        if edge in edge_counts.keys():
+            edge_counts[edge] += 1
+        elif edge[::-1] in edge_counts.keys():
+            edge_counts[edge[::-1]] += 1
+        else:
+            edge_counts[edge] = 1
+
+    if print_duplicates:
+        print([edge for edge, value in edge_counts.items() if value > 1])
+
+    return edge_counts
+
+def which_elements_change(var_a, var_b):
+    """ 
+    Returns the keys of the elements of `var_a` and `var_b` that don't match
+    """
+    changed_elements = set()
+    for key in var_a.keys():
+        if var_a[key] != var_b[key]:
+            changed_elements.add(key)
+    return changed_elements
+    
+def load_dictionary(filename):
+    dct = None
+    with open(filename, "r") as f:
+        dct = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+    return dct
+
 class DWSOptimizationModel(object):
 
-    @classmethod
-    def remove_duplicate_edges(cls, graph_with_duplicates, print_exclusions=False):
-        """ 
-        Returns a new, plottable, networkx MultiDiGraph with duplicate edges removed.
-        I.e., if for nodes u and v there are multiple edges (u,v) or (v,u) in the 
-        original graph, the new graph only has one such edge.
-
-        Adds all attributes and keys from the original edges to the new graph
-        
-        Also adds the "crs" attribute to the new graph so it can be plotted
-        using OSMnx
-
-        Paramters
-        ---------
-        graph_with_duplicates : networkx.MultiDiGraph
-        
-        print_exclusions : boolean, default False
-        If set to True, prints out the nodes of an edge whenever excluded
-        
-        Returns
-        -------
-        graph_new : networkx.MultiDiGraph
-        """
-        graph_new = nx.MultiDiGraph()
-
-        # Copy nodes and their attributes
-        graph_new.add_nodes_from(graph_with_duplicates.nodes(data=True))
-
-        # Iterate through edges and, if they're not duplicates, add them to the new graph
-        included_edges = set()
-        for u, v, edge_key, data in graph_with_duplicates.edges(keys=True, data=True):
-            if (u,v) not in included_edges and (v,u) not in included_edges:
-                graph_new.add_edge(u,v,edge_key,**data)
-                included_edges.add((u,v))
-            elif print_exclusions: 
-                print(f"Duplicate edge {(u,v)} excluded")
-            
-        # Necessary to plot the new graph with OSMnx for some reason
-        graph_new.graph["crs"] = graph_with_duplicates.graph["crs"]
-        
-        return graph_new
-
-    @classmethod
-    def count_duplicate_edges(cls, graph, print_duplicates=False):
-        edge_counts = {}
-        for edge in graph.edges():
-            if edge in edge_counts.keys():
-                edge_counts[edge] += 1
-            elif edge[::-1] in edge_counts.keys():
-                edge_counts[edge[::-1]] += 1
-            else:
-                edge_counts[edge] = 1
-
-        if print_duplicates:
-            print([edge for edge, value in edge_counts.items() if value > 1])
-
-        return edge_counts
-
-    @classmethod
-    def which_elements_change(cls, var_a, var_b):
-        """ 
-        Returns the keys of the elements of `var_a` and `var_b` that don't match
-        """
-        changed_elements = set()
-        for key in var_a.keys():
-            if var_a[key] != var_b[key]:
-                changed_elements.add(key)
-        return changed_elements
-    
     def __init__(self,
                  G=None, 
                  source_nodes=None,
@@ -209,20 +212,11 @@ class DWSOptimizationModel(object):
         """ 
         Just loads the data from the input files into key:value dictionaries.
         """
-        with open(x_context_filename, "r") as f:
-            self.x_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-
-        with open(y_context_filename, "r") as f:
-            self.y_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-
-        with open(z_context_filename, "r") as f:
-            self.z_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-
-        with open(d_context_filename, "r") as f:
-            self.d_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
-
-        with open(el_context_filename, "r") as f:
-            self.el_context = {ast.literal_eval(key): value for key, value in json.load(f).items()}
+        self.x_context = load_dictionary(x_context_filename)
+        self.y_context = load_dictionary(y_context_filename)
+        self.z_context = load_dictionary(z_context_filename)
+        self.d_context = load_dictionary(d_context_filename)
+        self.el_context = load_dictionary(el_context_filename)
 
     def add_vars_first_stage(self):
         """
@@ -501,11 +495,10 @@ class DWSOptimizationModel(object):
         self.add_constrs_first_stage()
         self.set_objective_first_stage()
 
-    def optimize(self, save_run=True, run_save_folder="results"):
+    def optimize(self, export_run=True, export_folder="results"):
         opt = self.mdl.optimize()
-        self.record_history(self.T[self.current_period_index], save_history=save_run, 
-                            path_prefix=(run_save_folder + "\\"))
-        self.current_period_index += 1
+        self.record_history(self.T[self.current_period_index], save_history=export_run, 
+                            path_prefix=(export_folder + "\\"))
         return opt
 
     def write_gurobidict_to_file(self, gurobidict, var_name, period, path_prefix=""):
@@ -542,14 +535,12 @@ class DWSOptimizationModel(object):
         period_to_record : any
         The key for the current period, used to index into the historical dictionaries
         """
-        for gurobi_var_dict, var_name in ((self.x,"x"), 
-                                            (self.y,"y"), 
-                                            (self.z,"z"), 
-                                            (self.a,"a"), 
-                                            (self.el,"el"), 
-                                            (self.r,"r"), 
-                                            (self.Q,"Q"), 
-                                            (self.p,"p")):
+        gurobi_vars = [(self.x,"x"), (self.y,"y"), (self.z,"z"), (self.a,"a"), 
+                       (self.el,"el"), (self.r,"r"), (self.Q,"Q"), (self.p,"p")]
+        if self.current_period_index > 1 or self.contextual:
+            gurobi_vars.extend([(self.d,"d"), (self.c, "c")])
+
+        for gurobi_var_dict, var_name in gurobi_vars:
             # Shorthand. 
             self.history[var_name][period_to_record] = \
                 {key: gurobi_var.X for key, gurobi_var in gurobi_var_dict.items()}
@@ -557,7 +548,7 @@ class DWSOptimizationModel(object):
                 self.write_gurobidict_to_file(gurobi_var_dict, 
                                               var_name, period_to_record, 
                                               path_prefix=path_prefix)
-            return self.history
+        return self.history
 
     def set_wastewater_flow(self, new_flow):
         """ 
@@ -624,7 +615,6 @@ class DWSOptimizationModel(object):
                 (gp.quicksum(self.d[*e, s] for s in self.D) >= 0.5 * (self.c[e[0]] + self.c[e[1]]) + (self.z[*e] - 1) \
                  for e in self.G.edges), 
                 name='elevation_change_assignment')
-            
         else:
             self.mdl.remove(self.a_constraint)
             self.mdl.remove(self.max_elevation_change_enforcement)
@@ -647,7 +637,7 @@ class DWSOptimizationModel(object):
         # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
 
         # TREATMENT PLANT CONTINUITY
-        self.treatment_plant_continuity = self.mdl.addConstrs((self.y[j] >= self.history["y"][self.periods[self.current_period_index-1]][j] 
+        self.treatment_plant_continuity = self.mdl.addConstrs((self.y[j] >= self.history["y"][self.T[self.current_period_index-1]][j] 
                                                                for j in self.treatment_nodes), name='treatment_plant_continuity')
         # We have to remove ^ this ^ constraint and re-add it after every period, because the numbers from the previous period will change
 
@@ -678,15 +668,19 @@ class DWSOptimizationModel(object):
                               GRB.MINIMIZE)
 
     def set_next_stage(self):
+        self.current_period_index += 1
+        if len(self.T) <= self.current_period_index:
+            self.T.append(self.T[-1] + 1) # We just extend T with a number
         self.edit_vars_next_stage()
         self.edit_constrs_next_stage()
         self.edit_objective_next_stage()
 
-def optimize_contextual_multiperiod_deterministic(periods, flow_at_period):
-    model = DWSOptimizationModel(SR_default=flow_at_period[periods[0]], T=periods)
+def optimize_multiperiod_deterministic(periods, flow_at_period):
+    model = DWSOptimizationModel(CAP_default=1000, SR_default=flow_at_period[periods[0]], T=periods)
     model.set_first_stage()
-    model.optimize(run_save_folder="results\\multiperiod")
+    model.optimize(export_run=True, export_folder="results\\multiperiod")
     for t in periods[1:]:
         model.set_wastewater_flow(flow_at_period[t])
         model.set_next_stage()
-        model.optimize(run_save_folder="results\\multiperiod")
+        model.optimize(export_run=True, export_folder="results\\multiperiod")
+    return model
