@@ -6,8 +6,8 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 # Change this for your local machine
-# sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
-sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
+sys.path.append("C:\\Users\\gabri\\Documents\\CMOR492-DWS")
+# sys.path.append("D:\\Users\\gabri\\Documents\\Distributed Water System Modeling Spring 2025\\CMOR492-DWS")
 from network_construction.network import get_Utown, source_treatment
 
 def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
@@ -39,9 +39,9 @@ def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
 
     # Iterate through edges and, if they're not duplicates, add them to the new graph
     included_edges = set()
-    for u, v, data in graph_with_duplicates.edges(data=True):
+    for u, v, edge_key, data in graph_with_duplicates.edges(keys=True, data=True):
         if (u,v) not in included_edges and (v,u) not in included_edges:
-            graph_new.add_edge(u,v,**data)
+            graph_new.add_edge(u,v,edge_key,**data)
             included_edges.add((u,v))
         elif print_exclusions: 
             print(f"Duplicate edge {(u,v)} excluded")
@@ -49,12 +49,6 @@ def remove_duplicate_edges(graph_with_duplicates, print_exclusions=False):
     graph_new.graph["crs"] = graph_with_duplicates.graph["crs"]
     
     return graph_new
-
-def source_treatment_graph():
-    G0 = ox.load_graphml("road_net_2.graphml")
-    source_nodes, treatment_nodes = source_treatment(G0)
-    G = remove_duplicate_edges(G0)
-    return (G, source_nodes, treatment_nodes)
 
 def count_duplicate_edges(graph, print_duplicates=False):
     edge_counts = {}
@@ -161,18 +155,6 @@ def load_decision_variables(folder="solutions", suffix="", cases=[""]):
     
     return (x_sol, y_sol, z_sol, a_sol, el_sol, r_sol, Q_sol, p_sol, d_sol, c_sol)
 
-def which_elements_change(var_a, var_b):
-    changed_elements = set()
-    for key in var_a.keys():
-        if var_a[key] != var_b[key]:
-            changed_elements.add(key)
-    return changed_elements
-
-def generate_hex_colors(n, cmap_name='hsv'):
-    cmap = plt.get_cmap(cmap_name)
-    colors = [mcolors.to_hex(cmap(i / (n - 1))) for i in range(n)]
-    return colors
-
 def separate_multistage_var(sol, cases):
     sol_T = {}
     for case in cases:
@@ -185,6 +167,21 @@ def separate_multistage_var(sol, cases):
                 sol_t.update({sol_key : val})
         sol_T.update({case : sol_t})
     return sol_T
+
+def which_elements_change(var_a, var_b):
+    changed_elements = set()
+    for key in var_a.keys():
+        if var_a[key] != var_b[key]:
+            changed_elements.add(key)
+    return changed_elements
+
+def generate_hex_colors(n, cmap_name='hsv'):
+    cmap = plt.get_cmap(cmap_name)
+    colors = [mcolors.to_hex(cmap(i / (n - 1))) for i in range(n)]
+    return colors
+
+def source_treatment_graph(G0):
+    return (remove_duplicate_edges(G0), *source_treatment(G0))
 
 def get_treatment_networks(treatment_nodes, x, y, z):
     """ 
@@ -207,7 +204,8 @@ def get_treatment_networks(treatment_nodes, x, y, z):
     
     for (u,v) in z.keys():
         for treatment_node in selected_treatment_nodes:
-            if x[u, treatment_node] == 1 and x[v, treatment_node] == 1:
+            if u in node_path_assignment[treatment_node] \
+                    and v in node_path_assignment[treatment_node]:
                 edge_path_assignment[treatment_node].append((u,v))
 
     return (node_path_assignment, edge_path_assignment)
@@ -215,8 +213,7 @@ def get_treatment_networks(treatment_nodes, x, y, z):
 def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z, 
                       x=None, color_treatment_nodes=False, highlighted_nodes=None, 
                       highlighted_edges=None, 
-                      default_edge_width_factor=6, draw_pipe_widths=False, a=None,
-                      cmap_name="rainbow", fig_size=15):
+                      edge_width=2, cmap_name="rainbow", fig_size=15):
     """ 
     Plots a pipe network with special colors for used/unused treatment nodes and selected edges.
     """
@@ -246,9 +243,11 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
 
     if x is not None:
         node_path_assignment = {treatment_node : [] for treatment_node in selected_treatment_centers}
-        for (source, treatment_node), path_selected in x.items():
-            if path_selected == 1:
-                node_path_assignment[treatment_node].append(source)
+        selected_paths = [path for path in x.keys() if x[path] == 1]
+        for (path_start, path_end) in selected_paths:
+            for treatment_node in node_path_assignment.keys():
+                if path_end == treatment_node:
+                    node_path_assignment[treatment_node].append(path_start)
 
     # OSMnx only plots MultiDiGraphs, so we need to check for arcs going in either direction
     is_selected = lambda edge : z[*edge] == 1 or z[*edge[::-1]] == 1
@@ -268,54 +267,37 @@ def plot_pipe_network(graph, treatment_nodes, source_nodes, y, z,
                     if not found_color and (edge[0] in sources or edge[0] == treatment_node) \
                             and (edge[1] in sources or edge[1] == treatment_node):
                         edge_colors.append(treatment_center_colors[treatment_node])
-                        break
-                else:
-                    edge_colors.append("magenta")
+                        found_color = True
+                if not found_color:
+                    edge_colors.append("white")
                     print(f"Edge apparently not connected to a treatment center: {edge}")
             else: 
                 edge_colors.append("white")
         else:
             edge_colors.append("#101010") # A dark grey color
 
-    if draw_pipe_widths:
-        edge_widths = []
-        for edge in graph.edges(data=False):
-            if is_selected(edge):
-                found_pipe_size = False
-                for pipe_size in (0.2, 0.25, 0.3, 0.35, 0.4, 0.45):
-                    if not found_pipe_size and a[*edge, pipe_size] == 1 or a[*edge[::-1], pipe_size] == 1:
-                        edge_widths.append(default_edge_width_factor * pipe_size)
-                        found_pipe_size = True
-                        break
-                if not found_pipe_size:
-                    edge_widths.append(default_edge_width_factor / 3.0)
-    else:
-        edge_widths = default_edge_width_factor / 3.0
-    
-    print(f"{len(edge_widths) = }, {edge_widths = }")
-
     node_sizes = [50 if node in treatment_nodes else 15 for node in graph.nodes]
 
     return ox.plot_graph(graph, figsize=(fig_size,fig_size), node_color=node_colors, 
                          node_size=node_sizes, node_alpha=0.9, edge_color=edge_colors,
-                         edge_linewidth=edge_widths,
+                         edge_linewidth=edge_width,
                          bgcolor="#000000")
 
-def plot_network_changes(graph, treatment_nodes, source_nodes, xt, yt, zt, cases, 
+def plot_network_changes(graph, treatment_nodes, source_nodes, xt, yt, zt, periods, 
                          color_treatment_nodes=False):
     """ 
     Assumes x, y, and z values are contained in the dictionaries xt, yt, zt
     which are keyed by period (so they all have the same keys)
     """
-    plots = {case: None for case in cases}
+    plots = {period: None for period in periods}
 
-    x0 = xt[cases[0]]
-    y0 = yt[cases[0]]
-    z0 = zt[cases[0]]
+    x0 = xt[periods[0]]
+    y0 = yt[periods[0]]
+    z0 = zt[periods[0]]
 
-    plots[cases[0]] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
-                                        y0, z0, x=x0, 
-                                        color_treatment_nodes=color_treatment_nodes)
+    print(periods[0])
+    plots[periods[0]] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                            y0, z0, x=x0, color_treatment_nodes=color_treatment_nodes)
     
     # Now that we've recorded the initial values, we only want to iterate on 
     # the subsequent ones.
@@ -324,15 +306,16 @@ def plot_network_changes(graph, treatment_nodes, source_nodes, xt, yt, zt, cases
     # yt = {period: yt[period] for period in periods}
     # zt = {period: zt[period] for period in periods}
 
-    for prev_period_index, case in enumerate(cases[1:]):
-        prev_period = cases[prev_period_index]
-        edges_changed = which_elements_change(zt[case], zt[prev_period])
+    for prev_period_index, period in enumerate(periods[1:]):
+        prev_period = periods[prev_period_index]
+        edges_changed = which_elements_change(zt[period], zt[prev_period])
         nodes_changed_list = []
         for edge in edges_changed:
             nodes_changed_list.extend(edge)
         nodes_changed = set(nodes_changed_list)
-        plots[case] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
-                                          yt[case], zt[case], x=xt[case], 
+        print(period)
+        plots[period] = plot_pipe_network(graph, treatment_nodes, source_nodes, 
+                                          yt[period], zt[period], x=xt[period], 
                                           highlighted_edges=edges_changed, 
                                           highlighted_nodes=nodes_changed, 
                                           color_treatment_nodes=color_treatment_nodes)
